@@ -8,8 +8,8 @@ edition = "2018"
 [dev-dependencies]
 criterion = { version = "0.3", features = ["real_blackbox"] }
 
-[[bench]]
-name = "my_benchmark"
-harness = false
+# [[bench]]
+# name = "my_benchmark"
+# harness = false
 
 [dependencies]
