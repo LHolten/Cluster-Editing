@@ -3,12 +3,12 @@ use std::{
     io::{self, BufRead, BufReader},
 };
 
-pub struct Graph(Vec<Vertex>);
+pub struct Graph(pub Vec<Vertex>);
 
 #[derive(Clone)]
 pub struct Vertex {
-    size: u32,
-    edges: Vec<Edge>,
+    pub size: u32,
+    pub edges: Vec<Edge>,
 }
 
 impl Default for Vertex {
@@ -22,8 +22,8 @@ impl Default for Vertex {
 
 #[derive(Clone)]
 pub struct Edge {
-    number: u32,
-    vertex: u32,
+    pub number: u32,
+    pub index: u32,
 }
 
 impl Graph {
@@ -53,11 +53,11 @@ impl Graph {
                     let v2 = words.next().unwrap().parse::<usize>().unwrap() - 1;
                     vertices[v1].edges.push(Edge {
                         number: 1,
-                        vertex: v2 as u32,
+                        index: v2 as u32,
                     });
                     vertices[v2].edges.push(Edge {
                         number: 1,
-                        vertex: v1 as u32,
+                        index: v1 as u32,
                     });
                 }
                 None => return Err(io::ErrorKind::InvalidInput.into()),

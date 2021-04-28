@@ -1,3 +1,4 @@
+mod critical;
 mod graph;
 
 #[cfg(test)]
