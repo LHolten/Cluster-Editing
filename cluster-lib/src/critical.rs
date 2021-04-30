@@ -1,7 +1,5 @@
-use std::{
-    cmp,
-    ops::{Add, AddAssign},
-};
+use std::{cmp, ops::Add};
+use std::{iter::Peekable, slice::Iter};
 
 use crate::graph::{Edge, Graph, Vertex};
 
@@ -36,60 +34,75 @@ impl Add<&Vertex> for &Vertex {
     fn add(self, rhs: &Vertex) -> Self::Output {
         Vertex {
             size: self.size + rhs.size,
-            edges: MergeEdges {
-                a: self.edges.clone(),
-                b: rhs.edges.clone(),
-            }
-            .collect(), // need to filter out the inner edges at some point
+            edges: AddEdges(MergeEdges::new(&self.edges, &rhs.edges)).collect(), // need to filter out the inner edges at some point
         }
     }
 }
 
-struct MergeEdges {
-    a: Vec<Edge>,
-    b: Vec<Edge>,
+#[derive(Clone)]
+struct MergeEdges<'a> {
+    a: Peekable<Iter<'a, Edge>>,
+    b: Peekable<Iter<'a, Edge>>,
 }
 
-impl Iterator for MergeEdges {
+impl<'a> MergeEdges<'a> {
+    fn new<I>(a: I, b: I) -> Self
+    where
+        I: IntoIterator<Item = &'a Edge, IntoIter = Iter<'a, Edge>>,
+    {
+        MergeEdges {
+            a: a.into_iter().peekable(),
+            b: b.into_iter().peekable(),
+        }
+    }
+
+    fn count_diff(&mut self) -> u32 {
+        self.filter(|(a, b)| b.is_none()).count() as u32
+    }
+}
+
+impl<'a> Iterator for MergeEdges<'a> {
+    type Item = (Edge, Option<Edge>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match (self.a.peek(), self.b.peek()) {
+            (None, None) => None,
+            (None, Some(v)) => Some((self.b.next().unwrap().clone(), None)),
+            (Some(v), None) => Some((self.a.next().unwrap().clone(), None)),
+            (Some(a), Some(b)) => match a.index.cmp(&b.index) {
+                cmp::Ordering::Less => Some((self.b.next().unwrap().clone(), None)),
+                cmp::Ordering::Equal => Some((
+                    self.a.next().unwrap().clone(),
+                    Some(self.b.next().unwrap().clone()),
+                )),
+                cmp::Ordering::Greater => Some((self.a.next().unwrap().clone(), None)),
+            },
+        }
+    }
+}
+
+struct AddEdges<'a>(MergeEdges<'a>);
+
+impl<'a> Iterator for AddEdges<'a> {
     type Item = Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // assert!(self.a.iter().map(|v| v.index).is_sorted());
-        let a = self.a.pop();
-        let b = self.b.pop();
-        if a.is_none() {
-            return b;
-        }
-        if b.is_none() {
-            return a;
-        }
-        let a = a.unwrap();
-        let b = b.unwrap();
-        match a.index.cmp(&b.index) {
-            cmp::Ordering::Less => {
-                self.a.push(a);
-                Some(b)
-            }
-            cmp::Ordering::Equal => add_edges(a.number, b.number)
-                .map(|number| Edge { number, ..a })
-                .or_else(|| self.next()),
-            cmp::Ordering::Greater => {
-                self.b.push(b);
-                Some(a)
-            }
+        let (a, b) = self.0.next()?;
+        if let Some(b) = b {
+            Some(Edge {
+                number: add_edges(a.number, b.number),
+                index: a.index,
+            })
+        } else {
+            Some(a)
         }
     }
 }
 
-fn add_edges(a: u32, b: u32) -> Option<u32> {
+fn add_edges(a: u32, b: u32) -> u32 {
     if a == 0 || b == 0 {
-        Some(0)
+        0
     } else {
-        let total = a + b;
-        if total == 0 {
-            None
-        } else {
-            Some(total)
-        }
+        a + b
     }
 }
