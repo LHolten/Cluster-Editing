@@ -40,13 +40,13 @@ impl Add<&Vertex> for &Vertex {
 }
 
 #[derive(Clone)]
-struct MergeEdges<'a> {
+pub struct MergeEdges<'a> {
     a: Peekable<Iter<'a, Edge>>,
     b: Peekable<Iter<'a, Edge>>,
 }
 
 impl<'a> MergeEdges<'a> {
-    fn new<I>(a: I, b: I) -> Self
+    pub fn new<I>(a: I, b: I) -> Self
     where
         I: IntoIterator<Item = &'a Edge, IntoIter = Iter<'a, Edge>>,
     {
@@ -56,7 +56,7 @@ impl<'a> MergeEdges<'a> {
         }
     }
 
-    fn count_diff(&mut self) -> u32 {
+    pub fn count_diff(&mut self) -> u32 {
         self.filter(|(a, b)| b.is_none()).count() as u32
     }
 }

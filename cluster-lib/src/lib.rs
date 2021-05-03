@@ -1,3 +1,4 @@
+mod branch;
 mod critical;
 mod graph;
 
