@@ -1,6 +1,7 @@
 mod branch;
-mod critical;
+mod disk;
 mod graph;
+mod merge;
 
 #[cfg(test)]
 mod tests {

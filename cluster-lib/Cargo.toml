@@ -13,3 +13,4 @@ criterion = { version = "0.3", features = ["real_blackbox"] }
 # harness = false
 
 [dependencies]
+ena = "0.14"

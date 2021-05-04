@@ -1,4 +1,4 @@
-use crate::{critical::MergeEdges, graph::Graph};
+use crate::merge::MergeEdges;
 
 impl Graph {
     // find best edge to split on in O(n + m^2) time
@@ -6,7 +6,7 @@ impl Graph {
         let mut best = None;
         let mut best_count = 2;
         for (vertex_id, vertex) in self.0.iter().enumerate() {
-            for edge in vertex.edges {
+            for edge in &vertex.edges {
                 if edge.index > vertex_id as u32 {
                     break;
                 }
