@@ -3,9 +3,9 @@ use std::{
     io::{self, BufRead, BufReader},
 };
 
-use crate::graph::{Edge, Vertex, VertexUnification};
+use crate::graph::Graph;
 
-pub fn load(file: File) -> io::Result<VertexUnification> {
+pub fn load(file: File) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
     let v = loop {
         let mut line = String::new();
@@ -20,11 +20,8 @@ pub fn load(file: File) -> io::Result<VertexUnification> {
             _ => return Err(io::ErrorKind::InvalidInput.into()),
         }
     };
-    let mut vertices = VertexUnification::new();
-    vertices.reserve(v);
-    for _ in 0..v {
-        vertices.new_key(Default::default());
-    }
+
+    let mut problem: Vec<Vec<u32>> = vec![Default::default(); v];
 
     for line in reader.lines() {
         let line = line?;
@@ -34,29 +31,11 @@ pub fn load(file: File) -> io::Result<VertexUnification> {
             Some(word) => {
                 let v1 = word.parse::<u32>().unwrap() - 1;
                 let v2 = words.next().unwrap().parse::<u32>().unwrap() - 1;
-                vertices.union_value(
-                    v1,
-                    Vertex {
-                        size: 0,
-                        edges: vec![Edge {
-                            number: 1,
-                            index: v2,
-                        }],
-                    },
-                );
-                vertices.union_value(
-                    v2,
-                    Vertex {
-                        size: 0,
-                        edges: vec![Edge {
-                            number: 1,
-                            index: v1,
-                        }],
-                    },
-                );
+                problem[v1 as usize].push(v2);
+                problem[v2 as usize].push(v1);
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
     }
-    Ok(vertices)
+    Ok(problem)
 }

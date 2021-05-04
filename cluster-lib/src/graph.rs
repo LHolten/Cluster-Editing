@@ -1,62 +1,18 @@
-use ena::unify::{InPlaceUnificationTable, NoError, UnifyKey, UnifyValue};
+use partitions::PartitionVec;
 
-use crate::merge::{AddEdges, MergeEdges};
+pub type Vertex = Vec<u32>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct VertexKey(u32);
+pub type Graph = Vec<Vertex>;
 
-impl UnifyKey for VertexKey {
-    type Value = Vertex;
-
-    fn index(&self) -> u32 {
-        self.0
-    }
-
-    fn from_index(u: u32) -> Self {
-        Self(u)
-    }
-
-    fn tag() -> &'static str {
-        "VertexKey"
-    }
-}
-
-impl Into<VertexKey> for u32 {
-    fn into(self) -> VertexKey {
-        VertexKey::from_index(self)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Vertex {
-    pub size: u32,
-    pub edges: Vec<Edge>,
-}
-
-impl Default for Vertex {
-    fn default() -> Self {
-        Self {
-            size: 1,
-            edges: Vec::new(),
-        }
-    }
-}
-
-impl UnifyValue for Vertex {
-    type Error = NoError;
-
-    fn unify_values(value1: &Self, value2: &Self) -> Result<Self, Self::Error> {
-        Ok(Vertex {
-            size: value1.size + value2.size,
-            edges: AddEdges(MergeEdges::new(&value1.edges, &value2.edges)).collect(), // need to filter out the inner edges at some point
-        })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Edge {
-    pub number: u32,
+#[derive(Debug, Clone, Copy)]
+pub struct WeightedEdge {
     pub index: u32,
+    pub count: i32,
 }
 
-pub type VertexUnification = InPlaceUnificationTable<VertexKey>;
+pub struct WeightedVertex {
+    pub size: u32,
+    pub edges: Vec<WeightedEdge>,
+}
+
+pub type Solution = PartitionVec<WeightedVertex>;
