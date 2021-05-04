@@ -1,4 +1,4 @@
-use ena::unify::{NoError, UnifyKey, UnifyValue};
+use ena::unify::{InPlaceUnificationTable, NoError, UnifyKey, UnifyValue};
 
 use crate::merge::{AddEdges, MergeEdges};
 
@@ -18,6 +18,12 @@ impl UnifyKey for VertexKey {
 
     fn tag() -> &'static str {
         "VertexKey"
+    }
+}
+
+impl Into<VertexKey> for u32 {
+    fn into(self) -> VertexKey {
+        VertexKey::from_index(self)
     }
 }
 
@@ -49,6 +55,8 @@ impl UnifyValue for Vertex {
 
 #[derive(Clone, Debug)]
 pub struct Edge {
-    pub number: i32,
+    pub number: u32,
     pub index: u32,
 }
+
+pub type VertexUnification = InPlaceUnificationTable<VertexKey>;

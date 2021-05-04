@@ -3,10 +3,7 @@ use std::{
     io::{self, BufRead, BufReader},
 };
 
-use crate::{
-    graph::{Edge, Vertex},
-    merge::VertexUnification,
-};
+use crate::graph::{Edge, Vertex, VertexUnification};
 
 pub fn load(file: File) -> io::Result<VertexUnification> {
     let mut reader = BufReader::new(file);
@@ -23,26 +20,43 @@ pub fn load(file: File) -> io::Result<VertexUnification> {
             _ => return Err(io::ErrorKind::InvalidInput.into()),
         }
     };
-    let mut vertices = vec![Vertex::default(); v];
+    let mut vertices = VertexUnification::new();
+    vertices.reserve(v);
+    for _ in 0..v {
+        vertices.new_key(Default::default());
+    }
+
     for line in reader.lines() {
         let line = line?;
         let mut words = line.split(' ');
         match words.next() {
             Some("c") => continue,
             Some(word) => {
-                let v1 = word.parse::<usize>().unwrap() - 1;
-                let v2 = words.next().unwrap().parse::<usize>().unwrap() - 1;
-                vertices[v1].edges.push(Edge {
-                    number: 1,
-                    index: v2 as u32,
-                });
-                vertices[v2].edges.push(Edge {
-                    number: 1,
-                    index: v1 as u32,
-                });
+                let v1 = word.parse::<u32>().unwrap() - 1;
+                let v2 = words.next().unwrap().parse::<u32>().unwrap() - 1;
+                vertices.union_value(
+                    v1,
+                    Vertex {
+                        size: 0,
+                        edges: vec![Edge {
+                            number: 1,
+                            index: v2,
+                        }],
+                    },
+                );
+                vertices.union_value(
+                    v2,
+                    Vertex {
+                        size: 0,
+                        edges: vec![Edge {
+                            number: 1,
+                            index: v1,
+                        }],
+                    },
+                );
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
     }
-    Ok(Self(vertices))
+    Ok(vertices)
 }

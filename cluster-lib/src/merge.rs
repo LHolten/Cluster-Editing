@@ -63,8 +63,7 @@ impl<'a> Iterator for AddEdges<'a> {
 }
 
 // 0 means that the edge is not allowed
-// this will give problems
-fn add_edges(a: i32, b: i32) -> i32 {
+fn add_edges(a: u32, b: u32) -> u32 {
     if a == 0 || b == 0 {
         0
     } else {
