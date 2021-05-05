@@ -40,11 +40,11 @@ impl<'a> Iterator for MergeEdges<'a> {
             (None, Some(_)) => Some((*self.b.next().unwrap(), None)),
             (Some(_), None) => Some((*self.a.next().unwrap(), None)),
             (Some(a), Some(b)) => match a.index.cmp(&b.index) {
-                cmp::Ordering::Less => Some((*self.b.next().unwrap(), None)),
+                cmp::Ordering::Less => Some((*self.a.next().unwrap(), None)),
                 cmp::Ordering::Equal => {
                     Some((*self.a.next().unwrap(), Some(*self.b.next().unwrap())))
                 }
-                cmp::Ordering::Greater => Some((*self.a.next().unwrap(), None)),
+                cmp::Ordering::Greater => Some((*self.b.next().unwrap(), None)),
             },
         }
     }
@@ -53,9 +53,10 @@ impl<'a> Iterator for MergeEdges<'a> {
 impl<V: Borrow<Vertex>> ops::Add<V> for &Vertex {
     type Output = Vertex;
 
+    // adds together a pair of vertices, however it does not fix the edges towards this vertex
     fn add(self, rhs: V) -> Self::Output {
         let rhs = rhs.borrow();
-        let edges = Vec::new();
+        let mut edges = Vec::new();
         let mut cost = self.cost + rhs.cost;
         for (a, mut b) in MergeEdges::new(&self.edges, &rhs.edges) {
             if b.is_none() {

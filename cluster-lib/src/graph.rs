@@ -1,4 +1,4 @@
-use std::ops;
+use std::{ops, slice};
 
 use ena::unify::{NoError, PersistentUnificationTable, UnifyKey, UnifyValue};
 
@@ -62,36 +62,75 @@ impl UnifyKey for VertexKey {
 
 impl From<u32> for VertexKey {
     fn from(u: u32) -> Self {
-        VertexKey::from(u)
+        VertexKey::from_index(u)
     }
 }
 
 pub type Graph = PersistentUnificationTable<VertexKey>;
 
-pub struct IterSets<'a> {
+pub struct SetIter<'a> {
     graph: &'a Graph,
     range: ops::Range<u32>,
 }
 
-impl<'a> IterSets<'a> {
+impl<'a> SetIter<'a> {
     pub fn new(graph: &'a Graph) -> Self {
-        IterSets {
+        SetIter::up_to(graph, graph.len() as u32)
+    }
+
+    pub fn up_to(graph: &'a Graph, index: u32) -> Self {
+        SetIter {
             graph,
-            range: 0..graph.len() as u32,
+            range: 0..index,
         }
     }
 }
 
-impl<'a> Iterator for IterSets<'a> {
-    type Item = VertexKey;
+// can maybe be reverted
+impl<'a> Iterator for SetIter<'a> {
+    type Item = Vertex;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.range.next()?;
-            let root: VertexKey = self.graph.find(index);
-            if root == index.into() {
-                return Some(root);
+            let vertex: Vertex = self.graph.inlined_probe_value(index);
+            if index == vertex.index {
+                return Some(vertex);
             }
+        }
+    }
+}
+
+pub struct EdgeIter<'a> {
+    graph: &'a Graph,
+    index: u32,
+    edges: slice::Iter<'a, Edge>,
+}
+
+impl<'a> EdgeIter<'a> {
+    pub fn new(graph: &'a Graph, vertex: &'a Vertex) -> Self {
+        EdgeIter {
+            graph,
+            index: vertex.index,
+            edges: vertex.edges.iter(),
+        }
+    }
+}
+
+impl<'a> Iterator for EdgeIter<'a> {
+    type Item = Vertex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let edge = self.edges.next()?;
+            let vertex: Vertex = self.graph.inlined_probe_value(edge.index);
+            if vertex.index > self.index {
+                return None;
+            }
+            if edge.count < 0 {
+                continue;
+            }
+            return Some(vertex);
         }
     }
 }
