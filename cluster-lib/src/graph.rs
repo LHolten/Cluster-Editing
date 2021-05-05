@@ -1,4 +1,4 @@
-use std::{ops, slice};
+use std::{cell::Cell, ops, slice};
 
 use ena::unify::{NoError, PersistentUnificationTable, UnifyKey, UnifyValue};
 
@@ -69,16 +69,19 @@ impl From<u32> for VertexKey {
 pub type Graph = PersistentUnificationTable<VertexKey>;
 
 pub struct SetIter<'a> {
-    graph: &'a Graph,
+    graph: &'a Cell<Graph>,
     range: ops::Range<u32>,
 }
 
 impl<'a> SetIter<'a> {
-    pub fn new(graph: &'a Graph) -> Self {
-        SetIter::up_to(graph, graph.len() as u32)
+    pub fn new(graph: &'a Cell<Graph>) -> Self {
+        let graph_inner: Graph = graph.take();
+        let len = graph_inner.len();
+        graph.set(graph_inner);
+        SetIter::up_to(graph, len as u32)
     }
 
-    pub fn up_to(graph: &'a Graph, index: u32) -> Self {
+    pub fn up_to(graph: &'a Cell<Graph>, index: u32) -> Self {
         SetIter {
             graph,
             range: 0..index,
@@ -93,7 +96,9 @@ impl<'a> Iterator for SetIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.range.next()?;
-            let vertex: Vertex = self.graph.inlined_probe_value(index);
+            let mut graph: Graph = self.graph.take();
+            let vertex: Vertex = graph.inlined_probe_value(index);
+            self.graph.set(graph);
             if index == vertex.index {
                 return Some(vertex);
             }
@@ -102,13 +107,13 @@ impl<'a> Iterator for SetIter<'a> {
 }
 
 pub struct EdgeIter<'a> {
-    graph: &'a Graph,
+    graph: &'a Cell<Graph>,
     index: u32,
     edges: slice::Iter<'a, Edge>,
 }
 
 impl<'a> EdgeIter<'a> {
-    pub fn new(graph: &'a Graph, vertex: &'a Vertex) -> Self {
+    pub fn new(graph: &'a Cell<Graph>, vertex: &'a Vertex) -> Self {
         EdgeIter {
             graph,
             index: vertex.index,
@@ -123,7 +128,9 @@ impl<'a> Iterator for EdgeIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let edge = self.edges.next()?;
-            let vertex: Vertex = self.graph.inlined_probe_value(edge.index);
+            let mut graph: Graph = self.graph.take();
+            let vertex: Vertex = graph.inlined_probe_value(edge.index);
+            self.graph.set(graph);
             if vertex.index > self.index {
                 return None;
             }

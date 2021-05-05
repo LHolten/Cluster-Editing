@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use crate::graph::{EdgeIter, Graph, SetIter};
 
 // fn critical(graph: Graph) -> Graph {
@@ -24,9 +26,10 @@ use crate::graph::{EdgeIter, Graph, SetIter};
 // }
 
 fn propagate(graph: &mut Graph) {
-    for v1 in SetIter::new(&graph) {
-        for v2 in EdgeIter::new(&graph, &v1) {
-            for v3 in EdgeIter::new(&graph, &(&v1 + v2)) {}
+    let graph_cell = Cell::from_mut(graph);
+    for v1 in SetIter::new(graph_cell) {
+        for v2 in EdgeIter::new(graph_cell, &v1) {
+            for v3 in EdgeIter::new(graph_cell, &(&v1 + v2)) {}
         }
     }
 }

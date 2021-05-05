@@ -34,24 +34,28 @@ pub fn load(file: File) -> io::Result<Graph> {
             Some(word) => {
                 let v1 = word.parse::<u32>().unwrap() - 1;
                 let v2 = words.next().unwrap().parse::<u32>().unwrap() - 1;
-                graph.unify_var_value(
-                    v1,
-                    Vertex {
-                        index: v1,
-                        size: 0,
-                        cost: 0,
-                        edges: vec![Edge::new(v2)],
-                    },
-                );
-                graph.unify_var_value(
-                    v2,
-                    Vertex {
-                        index: v2,
-                        size: 0,
-                        cost: 0,
-                        edges: vec![Edge::new(v1)],
-                    },
-                );
+                graph
+                    .unify_var_value(
+                        v1,
+                        Vertex {
+                            index: v1,
+                            size: 0,
+                            cost: 0,
+                            edges: vec![Edge::new(v2)],
+                        },
+                    )
+                    .unwrap();
+                graph
+                    .unify_var_value(
+                        v2,
+                        Vertex {
+                            index: v2,
+                            size: 0,
+                            cost: 0,
+                            edges: vec![Edge::new(v1)],
+                        },
+                    )
+                    .unwrap();
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
