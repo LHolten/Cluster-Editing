@@ -1,6 +1,12 @@
-use std::{cmp, iter::Peekable, slice::Iter};
+use std::{
+    borrow::Borrow,
+    cmp::{self, min},
+    iter::Peekable,
+    ops::{self, Neg},
+    slice::Iter,
+};
 
-use crate::graph::Edge;
+use crate::graph::{Edge, Vertex};
 
 #[derive(Clone)]
 pub struct MergeEdges<'a> {
@@ -44,28 +50,52 @@ impl<'a> Iterator for MergeEdges<'a> {
     }
 }
 
-pub struct AddEdges<'a>(pub MergeEdges<'a>);
+impl<V: Borrow<Vertex>> ops::Add<V> for &Vertex {
+    type Output = Vertex;
 
-impl<'a> Iterator for AddEdges<'a> {
-    type Item = Edge;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (a, b) = self.0.next()?;
-        if let Some(b) = b {
-            Some(Edge {
+    fn add(self, rhs: V) -> Self::Output {
+        let rhs = rhs.borrow();
+        let edges = Vec::new();
+        let mut cost = self.cost + rhs.cost;
+        for (a, mut b) in MergeEdges::new(&self.edges, &rhs.edges) {
+            if b.is_none() {
+                if a.index == self.index {
+                    if a.count < 0 {
+                        cost += a.count.neg() as u32;
+                    }
+                    continue;
+                }
+                if a.index == rhs.index {
+                    continue;
+                }
+                b = Some(Edge {
+                    index: a.index,
+                    count: ((self.size * rhs.size) as i32).neg(),
+                })
+            }
+            let b = b.unwrap();
+            if (a.count < 0) ^ (b.count < 0) {
+                cost += min(a.count.abs(), b.count.abs()) as u32;
+            }
+            edges.push(Edge {
                 count: add_edges(a.count, b.count),
                 index: a.index,
             })
-        } else {
-            Some(a)
+        }
+
+        Vertex {
+            index: min(self.index, rhs.index),
+            size: self.size + rhs.size,
+            cost,
+            edges,
         }
     }
 }
 
-// i32::MIN means that the edge is not allowed
+// -i32::MAX means that the edge is not allowed
 fn add_edges(a: i32, b: i32) -> i32 {
-    if a == i32::MIN || b == i32::MIN {
-        i32::MIN
+    if a == -i32::MAX || b == -i32::MAX {
+        -i32::MAX
     } else {
         a + b
     }

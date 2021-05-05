@@ -2,8 +2,6 @@ use std::ops;
 
 use ena::unify::{NoError, PersistentUnificationTable, UnifyKey, UnifyValue};
 
-use crate::merge::{AddEdges, MergeEdges};
-
 #[derive(Debug, Clone, Copy)]
 pub struct Edge {
     pub index: u32,
@@ -18,14 +16,18 @@ impl Edge {
 
 #[derive(Debug, Clone)]
 pub struct Vertex {
+    pub index: u32,
     pub size: u32,
+    pub cost: u32,
     pub edges: Vec<Edge>,
 }
 
-impl Default for Vertex {
-    fn default() -> Self {
+impl Vertex {
+    pub fn new(index: u32) -> Self {
         Vertex {
+            index,
             size: 1,
+            cost: 0,
             edges: Vec::new(),
         }
     }
@@ -35,10 +37,7 @@ impl UnifyValue for Vertex {
     type Error = NoError;
 
     fn unify_values(value1: &Self, value2: &Self) -> Result<Self, Self::Error> {
-        Ok(Vertex {
-            size: value1.size + value2.size,
-            edges: AddEdges(MergeEdges::new(&value1.edges, &value2.edges)).collect(), // need to filter out the inner edges at some point
-        })
+        Ok(value1 + value2)
     }
 }
 
