@@ -3,7 +3,9 @@ use std::{
     io::{self, BufRead, BufReader},
 };
 
-use crate::graph::Graph;
+use partitions::partition_vec;
+
+use crate::graph::{Edge, Graph};
 
 pub fn load(file: File) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
@@ -21,7 +23,7 @@ pub fn load(file: File) -> io::Result<Graph> {
         }
     };
 
-    let mut problem: Vec<Vec<u32>> = vec![Default::default(); v];
+    let mut graph: Graph = partition_vec![Default::default(); v];
 
     for line in reader.lines() {
         let line = line?;
@@ -31,11 +33,11 @@ pub fn load(file: File) -> io::Result<Graph> {
             Some(word) => {
                 let v1 = word.parse::<u32>().unwrap() - 1;
                 let v2 = words.next().unwrap().parse::<u32>().unwrap() - 1;
-                problem[v1 as usize].push(v2);
-                problem[v2 as usize].push(v1);
+                graph[v1 as usize].edges.push(Edge::new(v2));
+                graph[v2 as usize].edges.push(Edge::new(v1));
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
     }
-    Ok(problem)
+    Ok(graph)
 }

@@ -1,17 +1,17 @@
 use std::{cmp, iter::Peekable, slice::Iter};
 
-use crate::graph::WeightedEdge;
+use crate::graph::Edge;
 
 #[derive(Clone)]
 pub struct MergeEdges<'a> {
-    a: Peekable<Iter<'a, WeightedEdge>>,
-    b: Peekable<Iter<'a, WeightedEdge>>,
+    a: Peekable<Iter<'a, Edge>>,
+    b: Peekable<Iter<'a, Edge>>,
 }
 
 impl<'a> MergeEdges<'a> {
     pub fn new<I>(a: I, b: I) -> Self
     where
-        I: IntoIterator<Item = &'a WeightedEdge, IntoIter = Iter<'a, WeightedEdge>>,
+        I: IntoIterator<Item = &'a Edge, IntoIter = Iter<'a, Edge>>,
     {
         MergeEdges {
             a: a.into_iter().peekable(),
@@ -26,7 +26,7 @@ impl<'a> MergeEdges<'a> {
 }
 
 impl<'a> Iterator for MergeEdges<'a> {
-    type Item = (WeightedEdge, Option<WeightedEdge>);
+    type Item = (Edge, Option<Edge>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match (self.a.peek(), self.b.peek()) {
@@ -47,12 +47,12 @@ impl<'a> Iterator for MergeEdges<'a> {
 pub struct AddEdges<'a>(pub MergeEdges<'a>);
 
 impl<'a> Iterator for AddEdges<'a> {
-    type Item = WeightedEdge;
+    type Item = Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (a, b) = self.0.next()?;
         if let Some(b) = b {
-            Some(WeightedEdge {
+            Some(Edge {
                 count: add_edges(a.count, b.count),
                 index: a.index,
             })

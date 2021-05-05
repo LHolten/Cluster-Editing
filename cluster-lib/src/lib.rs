@@ -1,9 +1,10 @@
 mod branch;
+mod critical;
 mod disk;
 mod graph;
 mod merge;
 
-extern crate partitions;
+extern crate ena;
 
 #[cfg(test)]
 mod tests {

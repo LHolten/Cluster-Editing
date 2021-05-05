@@ -1,7 +1,7 @@
-use crate::{graph::Solution, merge::MergeEdges};
+use crate::{graph::Graph, merge::MergeEdges};
 
 // find best edge to split on in O(n + m^2) time
-fn best_edge(graph: Solution) -> Option<(u32, u32)> {
+fn best_edge(graph: Graph) -> Option<(u32, u32)> {
     let mut best = None;
     let mut best_count = 2;
 
