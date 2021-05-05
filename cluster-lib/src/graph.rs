@@ -1,3 +1,5 @@
+use std::ops;
+
 use ena::unify::{NoError, PersistentUnificationTable, UnifyKey, UnifyValue};
 
 use crate::merge::{AddEdges, MergeEdges};
@@ -41,7 +43,7 @@ impl UnifyValue for Vertex {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct VertexKey(u32);
+pub struct VertexKey(u32);
 
 impl UnifyKey for VertexKey {
     type Value = Vertex;
@@ -59,4 +61,38 @@ impl UnifyKey for VertexKey {
     }
 }
 
+impl From<u32> for VertexKey {
+    fn from(u: u32) -> Self {
+        VertexKey::from(u)
+    }
+}
+
 pub type Graph = PersistentUnificationTable<VertexKey>;
+
+pub struct IterSets<'a> {
+    graph: &'a Graph,
+    range: ops::Range<u32>,
+}
+
+impl<'a> IterSets<'a> {
+    pub fn new(graph: &'a Graph) -> Self {
+        IterSets {
+            graph,
+            range: 0..graph.len() as u32,
+        }
+    }
+}
+
+impl<'a> Iterator for IterSets<'a> {
+    type Item = VertexKey;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let index = self.range.next()?;
+            let root: VertexKey = self.graph.find(index);
+            if root == index.into() {
+                return Some(root);
+            }
+        }
+    }
+}

@@ -20,7 +20,7 @@ impl<'a> MergeEdges<'a> {
     }
 
     pub fn count_diff(&mut self) -> u32 {
-        self.filter(|(a, b)| b.is_none() || (a.count < 0) ^ (b.unwrap().count < 0))
+        self.filter(|(a, b)| b.is_none() || (a.count <= 0) ^ (b.unwrap().count <= 0))
             .count() as u32
     }
 }
