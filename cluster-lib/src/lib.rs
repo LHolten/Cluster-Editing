@@ -4,8 +4,6 @@ mod disk;
 mod graph;
 mod merge;
 
-extern crate ena;
-
 #[cfg(test)]
 mod tests {
     #[test]

@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use crate::graph::{EdgeIter, Graph, SetIter};
+use crate::graph::{ClusterIter, EdgeIter, Graph};
 
 // fn critical(graph: Graph) -> Graph {
 //     let mut new_vertices = Vec::new();
@@ -27,7 +27,7 @@ use crate::graph::{EdgeIter, Graph, SetIter};
 
 fn propagate(graph: &mut Graph) {
     let graph_cell = Cell::from_mut(graph);
-    for v1 in SetIter::new(graph_cell) {
+    for v1 in ClusterIter::new(graph_cell) {
         for v2 in EdgeIter::new(graph_cell, &v1) {
             for v3 in EdgeIter::new(graph_cell, &(&v1 + v2)) {}
         }

@@ -13,4 +13,3 @@ criterion = { version = "0.3", features = ["real_blackbox"] }
 # harness = false
 
 [dependencies]
-ena = { version = "0.14", features = ["persistent"] }

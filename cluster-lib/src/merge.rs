@@ -1,12 +1,11 @@
 use std::{
-    borrow::Borrow,
     cmp::{self, min},
     iter::Peekable,
-    ops::{self, Neg},
+    ops::Neg,
     slice::Iter,
 };
 
-use crate::graph::{Edge, Vertex};
+use crate::graph::{Edge, Graph, Vertex};
 
 #[derive(Clone)]
 pub struct MergeEdges<'a> {
@@ -26,7 +25,7 @@ impl<'a> MergeEdges<'a> {
     }
 
     pub fn count_diff(&mut self) -> u32 {
-        self.filter(|(a, b)| b.is_none() || (a.count <= 0) ^ (b.unwrap().count <= 0))
+        self.filter(|(a, b)| b.is_none() || (a.weight <= 0) ^ (b.unwrap().weight <= 0))
             .count() as u32
     }
 }
@@ -39,7 +38,7 @@ impl<'a> Iterator for MergeEdges<'a> {
             (None, None) => None,
             (None, Some(_)) => Some((*self.b.next().unwrap(), None)),
             (Some(_), None) => Some((*self.a.next().unwrap(), None)),
-            (Some(a), Some(b)) => match a.index.cmp(&b.index) {
+            (Some(a), Some(b)) => match a.to.cmp(&b.to) {
                 cmp::Ordering::Less => Some((*self.a.next().unwrap(), None)),
                 cmp::Ordering::Equal => {
                     Some((*self.a.next().unwrap(), Some(*self.b.next().unwrap())))
@@ -50,47 +49,59 @@ impl<'a> Iterator for MergeEdges<'a> {
     }
 }
 
-impl<V: Borrow<Vertex>> ops::Add<V> for &Vertex {
-    type Output = Vertex;
-
+impl Graph {
     // adds together a pair of vertices, however it does not fix the edges towards this vertex
-    fn add(self, rhs: V) -> Self::Output {
-        let rhs = rhs.borrow();
+    pub fn merge(&mut self, v1: u32, v2: u32) -> u32 {
+        let lhs = &self[v1];
+        let rhs = &self[v2];
+
         let mut edges = Vec::new();
-        let mut cost = self.cost + rhs.cost;
-        for (a, mut b) in MergeEdges::new(&self.edges, &rhs.edges) {
+        let mut cost = 0;
+        for (a, mut b) in MergeEdges::new(&lhs.edges, &rhs.edges) {
             if b.is_none() {
-                if a.index == self.index {
-                    if a.count < 0 {
-                        cost += a.count.neg() as u32;
+                if a.to == v1 {
+                    if a.weight < 0 {
+                        cost += a.weight.neg() as u32;
                     }
                     continue;
                 }
-                if a.index == rhs.index {
+                if a.to == v2 {
                     continue;
                 }
                 b = Some(Edge {
-                    index: a.index,
-                    count: ((self.size * rhs.size) as i32).neg(),
+                    to: a.to,
+                    weight: ((lhs.size * rhs.size) as i32).neg(),
                 })
             }
             let b = b.unwrap();
-            if (a.count < 0) ^ (b.count < 0) {
-                cost += min(a.count.abs(), b.count.abs()) as u32;
+            if (a.weight < 0) ^ (b.weight < 0) {
+                cost += min(a.weight.abs(), b.weight.abs()) as u32;
             }
             edges.push(Edge {
-                count: add_edges(a.count, b.count),
-                index: a.index,
+                weight: add_edges(a.weight, b.weight),
+                to: a.to,
             })
         }
 
-        Vertex {
-            index: min(self.index, rhs.index),
-            size: self.size + rhs.size,
-            cost,
+        let new_index = self.vertices.len() as u32;
+        self.vertices.push(Vertex {
+            merged: None,
+            size: lhs.size + rhs.size,
             edges,
-        }
+        });
+        self.connect(v1, new_index);
+        self.connect(v2, new_index);
+
+        cost
     }
+}
+
+fn organize_edges(edges: &Vec<Edge>, graph: &Graph) -> Vec<Edge> {
+    let new = Vec::new();
+    for edge in edges {
+        let to = graph.find(edge.to);
+    }
+    new
 }
 
 // -i32::MAX means that the edge is not allowed
