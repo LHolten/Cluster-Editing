@@ -10,7 +10,7 @@ fn best_edge(graph: &mut Graph) -> Option<(u32, u32)> {
 
     for vertex in graph.clusters() {
         for edge in graph.edges(vertex) {
-            let count = MergeEdges::new(&vertex.edges, &edge.edges).count_diff();
+            let count = graph.merge_edges(vertex, edge.to).count_diff();
             if count > best_count {
                 best_count = count;
                 best = Some((vertex, edge.to))

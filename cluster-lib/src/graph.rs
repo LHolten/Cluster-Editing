@@ -45,6 +45,7 @@ impl Graph {
 
     pub fn rollback(&mut self) {
         let len = self.versions.pop().unwrap();
+        let version = self.versions.len() as u32;
         self.vertices.truncate(len as usize);
 
         for vertex in &mut self.vertices {
@@ -57,7 +58,7 @@ impl Graph {
                     edge_len = i;
                     break;
                 }
-                if edge.version > self.versions.len() as u32 {
+                if edge.version > version {
                     edge.version = u32::MAX
                 }
             }
@@ -134,13 +135,13 @@ pub struct EdgeIter<'a> {
 }
 
 impl<'a> Iterator for EdgeIter<'a> {
-    type Item = &'a Edge;
+    type Item = Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let edge = self.edges.next()?;
             if self.graph.vertices[edge.to as usize].merged.is_none() {
-                return Some(edge);
+                return Some(*edge);
             }
         }
     }
