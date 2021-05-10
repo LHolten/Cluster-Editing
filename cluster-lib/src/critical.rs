@@ -25,11 +25,11 @@ use crate::graph::{ClusterIter, EdgeIter, Graph};
 //     new_vertices
 // }
 
-fn propagate(graph: &mut Graph) {
-    let graph_cell = Cell::from_mut(graph);
-    for v1 in ClusterIter::new(graph_cell) {
-        for v2 in EdgeIter::new(graph_cell, &v1) {
-            for v3 in EdgeIter::new(graph_cell, &(&v1 + v2)) {}
-        }
-    }
-}
+// fn propagate(graph: &mut Graph) {
+//     let graph_cell = Cell::from_mut(graph);
+//     for v1 in ClusterIter::new(graph_cell) {
+//         for v2 in EdgeIter::new(graph_cell, &v1) {
+//             for v3 in EdgeIter::new(graph_cell, &(&v1 + v2)) {}
+//         }
+//     }
+// }

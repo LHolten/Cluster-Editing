@@ -1,4 +1,7 @@
-use std::{ops, slice};
+use std::{
+    ops,
+    slice::{Iter, IterMut},
+};
 
 use std::ops::{Index, IndexMut};
 
@@ -51,31 +54,36 @@ impl Graph {
             if vertex.merged.is_some() && vertex.merged.unwrap() >= len {
                 vertex.merged = None
             }
-            for edge in &mut vertex.edges {
+            let mut edge_len = vertex.edges.len();
+            for (i, edge) in vertex.edges.iter_mut().enumerate() {
+                if edge.to >= len {
+                    edge_len = i;
+                    break;
+                }
                 if edge.version > self.versions.len() as u32 {
                     edge.version = u32::MAX
                 }
             }
+            vertex.edges.truncate(edge_len)
         }
     }
 
     pub fn cut(&mut self, v1: u32, v2: u32) -> u32 {
-        let v1 = self.find(v1);
-        let v2 = self.find(v2);
         let mut weight = 0;
         let mut cost = 0;
-        for edge in &mut self.vertices[v1 as usize].edges {
-            if self.find(edge.to) == v2 {
-                edge.version = self.versions.len() as u32;
+        let version = self.versions.len() as u32;
+        for edge in self.edges_mut(v1) {
+            if edge.to == v2 {
+                edge.version = version;
                 if weight * edge.weight < 0 {
                     cost += edge.weight.abs() as u32
                 }
                 weight += edge.weight;
             }
         }
-        for edge in &mut self.vertices[v2 as usize].edges {
-            if self.find(edge.to) == v1 {
-                edge.version = self.versions.len() as u32;
+        for edge in self.edges_mut(v2) {
+            if edge.to == v1 {
+                edge.version = version;
             }
         }
         cost
@@ -88,16 +96,23 @@ impl Graph {
         }
     }
 
-    pub fn find(&self, index: u32) -> u32 {
-        if let Some(new_index) = self.vertices[index as usize].merged {
-            self.find(new_index)
-        } else {
-            index
+    pub fn connect(&mut self, v1: u32, v2: u32) {
+        self[v1].merged = Some(v2)
+    }
+
+    pub fn edges<'a>(&'a self, index: u32) -> EdgeIter<'a> {
+        EdgeIter {
+            graph: self,
+            edges: self[index].edges.iter(),
         }
     }
 
-    pub fn connect(&mut self, v1: u32, v2: u32) {
-        self.vertices[self.find(v1) as usize].merged = Some(v2)
+    pub fn edges_mut<'a>(&'a mut self, index: u32) -> EdgeIterMut<'a> {
+        let graph = self as *const _;
+        EdgeIterMut {
+            graph: unsafe { &*graph },
+            edges: self[index].edges.iter_mut(),
+        }
     }
 }
 
@@ -105,19 +120,13 @@ impl Index<u32> for Graph {
     type Output = Vertex;
 
     fn index(&self, index: u32) -> &Self::Output {
-        &self.vertices[self.find(index) as usize]
+        &self.vertices[index as usize]
     }
 }
 
 impl IndexMut<u32> for Graph {
     fn index_mut(&mut self, index: u32) -> &mut Self::Output {
-        let index = self.find(index);
-        if &index >= self.versions.last().unwrap() {
-            &mut self.vertices[index as usize]
-        } else {
-            self.vertices.push(self.vertices[index as usize].clone());
-            self.vertices.last_mut().unwrap()
-        }
+        &mut self.vertices[index as usize]
     }
 }
 
@@ -126,53 +135,52 @@ pub struct ClusterIter<'a> {
     range: ops::Range<u32>,
 }
 
-// can maybe be reverted
 impl<'a> Iterator for ClusterIter<'a> {
-    type Item = &'a Vertex;
+    type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.range.next()?;
-            let vertex = &self.graph[index];
-            if vertex.merged.is_none() {
-                return Some(vertex);
+            if self.graph.vertices[index as usize].merged.is_none() {
+                return Some(index);
             }
         }
     }
 }
 
+#[derive(Clone)]
 pub struct EdgeIter<'a> {
     graph: &'a Graph,
-    index: u32,
-    edges: slice::Iter<'a, Edge>,
+    edges: Iter<'a, Edge>,
 }
 
-// impl<'a> EdgeIter<'a> {
-//     pub fn new(graph: &'a Cell<Graph>, vertex: &'a Vertex) -> Self {
-//         EdgeIter {
-//             graph,
-//             index: vertex.index,
-//             edges: vertex.edges.iter(),
-//         }
-//     }
-// }
+impl<'a> Iterator for EdgeIter<'a> {
+    type Item = &'a Edge;
 
-// impl<'a> Iterator for EdgeIter<'a> {
-//     type Item = Vertex;
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let edge = self.edges.next()?;
+            if self.graph.vertices[edge.to as usize].merged.is_none() {
+                return Some(edge);
+            }
+        }
+    }
+}
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         loop {
-//             let edge = self.edges.next()?;
-//             let mut graph: Graph = self.graph.take();
-//             let vertex: Vertex = graph.inlined_probe_value(edge.index);
-//             self.graph.set(graph);
-//             if vertex.index > self.index {
-//                 return None;
-//             }
-//             if edge.count < 0 {
-//                 continue;
-//             }
-//             return Some(vertex);
-//         }
-//     }
-// }
+pub struct EdgeIterMut<'a> {
+    graph: &'a Graph,
+    edges: IterMut<'a, Edge>,
+}
+
+impl<'a> Iterator for EdgeIterMut<'a> {
+    type Item = &'a mut Edge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let edge = self.edges.next()?;
+            if self.graph.vertices[edge.to as usize].merged.is_none() {
+                return Some(edge);
+            }
+        }
+    }
+}
