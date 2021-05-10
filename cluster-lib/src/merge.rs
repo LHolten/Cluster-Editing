@@ -7,12 +7,7 @@ use std::{
 use crate::graph::{Edge, EdgeIter, Graph, Vertex};
 
 impl Graph {
-    // adds together a pair of vertices, however it does not fix the edges towards this vertex
-    // gonna fix this
     pub fn merge(&mut self, v1: u32, v2: u32) -> u32 {
-        let lhs = &self[v1];
-        let rhs = &self[v2];
-
         let index = self.vertices.len() as u32;
         let mut edges = Vec::new();
         let mut cost = 0;
@@ -28,7 +23,7 @@ impl Graph {
                     continue;
                 }
                 b = Some(Edge {
-                    weight: ((lhs.size * rhs.size) as i32).neg(),
+                    weight: ((self[v1].size * self[v2].size) as i32).neg(),
                     to: a.to,
                     version: u32::MAX,
                 })
@@ -51,7 +46,7 @@ impl Graph {
 
         self.vertices.push(Vertex {
             merged: None,
-            size: lhs.size + rhs.size,
+            size: self[v1].size + self[v2].size,
             edges,
         });
         self.connect(v1, index);
@@ -60,11 +55,12 @@ impl Graph {
         cost
     }
 
-    fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<'_> {
+    fn merge_edges(&self, v1: u32, v2: u32) -> Vec<(Edge, Option<Edge>)> {
         MergeEdges {
             a: self.edges(v1).peekable(),
             b: self.edges(v2).peekable(),
         }
+        .collect()
     }
 }
 

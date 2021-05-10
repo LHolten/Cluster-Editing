@@ -1,7 +1,4 @@
-use std::{
-    ops,
-    slice::{Iter, IterMut},
-};
+use std::{ops, slice::Iter};
 
 use std::ops::{Index, IndexMut};
 
@@ -12,7 +9,7 @@ pub struct Graph {
 
 #[derive(Debug, Clone, Default)]
 pub struct Vertex {
-    merged: Option<u32>,
+    pub merged: Option<u32>,
     pub size: u32,
     pub edges: Vec<Edge>,
 }
@@ -69,24 +66,14 @@ impl Graph {
     }
 
     pub fn cut(&mut self, v1: u32, v2: u32) -> u32 {
-        let mut weight = 0;
-        let mut cost = 0;
         let version = self.versions.len() as u32;
-        for edge in self.edges_mut(v1) {
-            if edge.to == v2 {
-                edge.version = version;
-                if weight * edge.weight < 0 {
-                    cost += edge.weight.abs() as u32
-                }
-                weight += edge.weight;
-            }
-        }
-        for edge in self.edges_mut(v2) {
-            if edge.to == v1 {
-                edge.version = version;
-            }
-        }
-        cost
+        let edges = &mut self[v1].edges;
+        let index = edges.binary_search_by_key(&v2, |e| e.to).unwrap();
+        edges[index].version = version;
+        let edges = &mut self[v2].edges;
+        let index = edges.binary_search_by_key(&v1, |e| e.to).unwrap();
+        edges[index].version = version;
+        edges[index].weight.abs() as u32
     }
 
     pub fn clusters(&self) -> ClusterIter<'_> {
@@ -104,14 +91,6 @@ impl Graph {
         EdgeIter {
             graph: self,
             edges: self[index].edges.iter(),
-        }
-    }
-
-    pub fn edges_mut<'a>(&'a mut self, index: u32) -> EdgeIterMut<'a> {
-        let graph = self as *const _;
-        EdgeIterMut {
-            graph: unsafe { &*graph },
-            edges: self[index].edges.iter_mut(),
         }
     }
 }
@@ -156,24 +135,6 @@ pub struct EdgeIter<'a> {
 
 impl<'a> Iterator for EdgeIter<'a> {
     type Item = &'a Edge;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let edge = self.edges.next()?;
-            if self.graph.vertices[edge.to as usize].merged.is_none() {
-                return Some(edge);
-            }
-        }
-    }
-}
-
-pub struct EdgeIterMut<'a> {
-    graph: &'a Graph,
-    edges: IterMut<'a, Edge>,
-}
-
-impl<'a> Iterator for EdgeIterMut<'a> {
-    type Item = &'a mut Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
