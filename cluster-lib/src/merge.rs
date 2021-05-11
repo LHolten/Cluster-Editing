@@ -9,43 +9,49 @@ use crate::graph::{Edge, EdgeIter, Graph, Vertex};
 impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: u32, v2: u32) -> (u32, u32) {
-        let index = self.vertices.len() as u32;
         let mut edges = Vec::new();
         let mut cost = 0;
         for (mut a, mut b) in self.merge_edges(v1, v2) {
-            match (a, b) {
-                (None, Some(b)) => {
-                    if b.to == v1 {
-                        continue;
-                    }
-                    a = Some(Edge {
-                        weight: ((self[v1].size * self[b.to].size) as i32).neg(),
-                        ..b
-                    })
+            if a.is_none() {
+                let b = b.unwrap();
+                if b.to == v1 {
+                    continue;
                 }
-                (Some(a), None) => {
-                    if a.to == v2 {
-                        continue;
-                    }
-                    b = Some(Edge {
-                        weight: ((self[v2].size * self[a.to].size) as i32).neg(),
-                        ..a
-                    })
+                a = Some(Edge {
+                    weight: ((self[v1].size * self[b.to].size) as i32).neg(),
+                    ..b
+                })
+            }
+            if b.is_none() {
+                let a = a.unwrap();
+                if a.to == v2 {
+                    continue;
                 }
-                _ => {}
+                b = Some(Edge {
+                    weight: ((self[v2].size * self[a.to].size) as i32).neg(),
+                    ..a
+                })
             }
-            let a = a.unwrap();
-            let b = b.unwrap();
-            if a.weight * b.weight < 0 {
-                cost += min(a.weight.abs(), b.weight.abs()) as u32;
-            }
+            let mut a = a.unwrap();
+            let mut b = b.unwrap();
             edges.push(Edge {
                 weight: a.weight + b.weight,
                 to: a.to,
                 version: min(a.version, b.version),
             });
+
+            if a.version != u32::MAX {
+                a.weight = -i32::MAX
+            }
+            if b.version != u32::MAX {
+                b.weight = -i32::MAX
+            }
+            if (a.weight <= 0) ^ (b.weight <= 0) {
+                cost += min(a.weight.abs(), b.weight.abs()) as u32;
+            }
         }
 
+        let index = self.vertices.len() as u32;
         for edge in &edges {
             self[edge.to].edges.push(Edge {
                 weight: edge.weight,
@@ -79,12 +85,15 @@ pub struct MergeEdges<'a> {
 }
 
 impl<'a> MergeEdges<'a> {
+    // also counts the edges to each other, so subtract 2
     pub fn count_diff(&mut self) -> u32 {
         self.filter(|(a, b)| match (a, b) {
-            (None, None) => false,
-            (None, Some(b)) => b.weight > 0,
-            (Some(a), None) => a.weight > 0,
-            (Some(a), Some(b)) => a.weight * b.weight < 0,
+            (None, None) => unreachable!(),
+            (None, Some(b)) => b.weight > 0 && b.version == u32::MAX,
+            (Some(a), None) => a.weight > 0 && a.version == u32::MAX,
+            (Some(a), Some(b)) => {
+                (a.weight > 0 && a.version == u32::MAX) ^ (b.weight > 0 && b.version == u32::MAX)
+            }
         })
         .count() as u32
     }

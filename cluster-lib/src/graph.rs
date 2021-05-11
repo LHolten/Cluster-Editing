@@ -7,11 +7,21 @@ pub struct Graph {
     versions: Vec<u32>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Vertex {
     pub merged: Option<u32>,
     pub size: u32,
     pub edges: Vec<Edge>,
+}
+
+impl Default for Vertex {
+    fn default() -> Self {
+        Self {
+            merged: None,
+            size: 1,
+            edges: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -66,6 +76,7 @@ impl Graph {
         }
     }
 
+    // requires edge between vertices to be positive
     pub fn cut(&mut self, v1: u32, v2: u32) -> u32 {
         let version = self.versions.len() as u32;
         let edges = &mut self[v1].edges;
@@ -74,7 +85,8 @@ impl Graph {
         let edges = &mut self[v2].edges;
         let index = edges.binary_search_by_key(&v1, |e| e.to).unwrap();
         edges[index].version = version;
-        edges[index].weight.abs() as u32
+        debug_assert!(edges[index].weight > 0);
+        edges[index].weight as u32
     }
 
     pub fn clusters(&self) -> ClusterIter<'_> {

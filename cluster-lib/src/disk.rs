@@ -37,5 +37,10 @@ pub fn load(file: File) -> io::Result<Graph> {
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
     }
+
+    for vertex in &mut graph.vertices {
+        vertex.edges.sort_by_key(|e| e.to)
+    }
+
     Ok(graph)
 }
