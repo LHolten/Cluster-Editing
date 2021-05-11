@@ -84,10 +84,6 @@ impl Graph {
         }
     }
 
-    pub fn connect(&mut self, v1: u32, v2: u32) {
-        self[v1].merged = Some(v2)
-    }
-
     pub fn edges<'a>(&'a self, index: u32) -> EdgeIter<'a> {
         EdgeIter {
             graph: self,

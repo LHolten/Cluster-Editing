@@ -8,7 +8,7 @@ use crate::graph::{Edge, EdgeIter, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
-    pub fn merge(&mut self, v1: u32, v2: u32) -> u32 {
+    pub fn merge(&mut self, v1: u32, v2: u32) -> (u32, u32) {
         let index = self.vertices.len() as u32;
         let mut edges = Vec::new();
         let mut cost = 0;
@@ -59,10 +59,9 @@ impl Graph {
             size: self[v1].size + self[v2].size,
             edges,
         });
-        self.connect(v1, index);
-        self.connect(v2, index);
-
-        cost
+        self[v1].merged = Some(index);
+        self[v2].merged = Some(index);
+        (cost, index)
     }
 
     pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<'_> {
