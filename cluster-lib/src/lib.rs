@@ -12,8 +12,11 @@ mod tests {
     use crate::{disk::load, search::search_graph};
 
     #[test]
-    fn test001() {
-        let mut graph = load(File::open("../exact/exact001.gr").unwrap()).unwrap();
-        assert_eq!(search_graph(&mut graph, u32::MAX), 3);
+    fn test() {
+        for instance in (1..50).step_by(2) {
+            let file_name = format!("../exact/exact{:03}.gr", instance);
+            let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            println!("{}", search_graph(&mut graph, u32::MAX));
+        }
     }
 }

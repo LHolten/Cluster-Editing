@@ -97,7 +97,7 @@ impl Graph {
         }
     }
 
-    pub fn edges<'a>(&'a self, index: u32) -> EdgeIter<'a> {
+    pub fn edges(&self, index: u32) -> EdgeIter<'_> {
         EdgeIter {
             graph: self,
             edges: self[index].edges.iter(),
