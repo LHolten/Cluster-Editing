@@ -1,9 +1,9 @@
 mod branch;
 // mod critical;
-mod disk;
+pub mod disk;
 mod graph;
 mod merge;
-mod search;
+pub mod search;
 
 #[cfg(test)]
 mod tests {

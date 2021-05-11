@@ -8,8 +8,8 @@ edition = "2018"
 [dev-dependencies]
 criterion = { version = "0.3" }
 
-# [[bench]]
-# name = "my_benchmark"
-# harness = false
+[[bench]]
+name = "public_instances"
+harness = false
 
 [dependencies]

@@ -2,6 +2,7 @@ use std::{ops, slice::Iter};
 
 use std::ops::{Index, IndexMut};
 
+#[derive(Clone)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
     versions: Vec<u32>,

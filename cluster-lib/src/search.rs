@@ -28,7 +28,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
         if cost < upper {
             upper = search_graph(graph, upper - cost) + cost;
         }
-        dbg!(upper)
+        upper
     } else {
         0
     }
