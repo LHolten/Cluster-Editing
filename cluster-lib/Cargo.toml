@@ -7,6 +7,7 @@ edition = "2018"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }
+pretty_assertions = "0.7.2"
 
 [[bench]]
 name = "public_instances"

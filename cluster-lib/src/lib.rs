@@ -2,7 +2,7 @@ mod branch;
 mod critical;
 pub mod disk;
 mod graph;
-mod kernel;
+pub mod kernel;
 mod merge;
 pub mod search;
 
@@ -10,15 +10,30 @@ pub mod search;
 mod tests {
     use std::fs::File;
 
-    use crate::{critical::critical, disk::load, search::search_graph};
+    use crate::{
+        disk::{load, write},
+        kernel::kernelize,
+        search::search_graph,
+    };
 
     #[test]
     fn test() {
         for instance in (1..50).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
-            // critical(&mut graph);
             println!("{}", search_graph(&mut graph, u32::MAX));
+        }
+    }
+
+    #[test]
+    fn test_kernelize() {
+        for instance in (1..200).step_by(2) {
+            let file_name = format!("../exact/exact{:03}.gr", instance);
+            let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            let d = kernelize(&mut graph);
+            let out_file = format!("../exact/kernel{:03}.gr", instance);
+            write(&mut graph, File::create(out_file).unwrap()).unwrap();
+            println!("{}", d);
         }
     }
 }

@@ -1,6 +1,7 @@
+use std::io::Write;
 use std::{
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, BufWriter},
 };
 
 use crate::graph::{Edge, Graph};
@@ -43,4 +44,71 @@ pub fn load(file: File) -> io::Result<Graph> {
     }
 
     Ok(graph)
+}
+
+impl Graph {
+    fn vertex_size(&self, index: u32) -> u32 {
+        let edges = self.edges(index).positive().collect::<Vec<_>>();
+        if edges.is_empty() {
+            0
+        } else if edges.len() == 1 {
+            edges[0].weight as u32
+        } else {
+            1
+        }
+    }
+
+    fn size(&self) -> u32 {
+        self.clusters().map(|v| self.vertex_size(v)).sum()
+    }
+
+    fn edge_count(&self) -> u32 {
+        self.clusters()
+            .map(|v| self.edges(v).positive().map(|e| e.weight).sum::<i32>())
+            .sum::<i32>() as u32
+            / 2
+    }
+}
+
+pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
+    let mut writer = BufWriter::new(file);
+    writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
+
+    let mut new_index = vec![1];
+    for vertex in 0..graph.vertices.len() as u32 {
+        if graph[vertex].merged.is_some() {
+            new_index.push(*new_index.last().unwrap());
+            continue;
+        }
+        let size = graph.vertex_size(vertex);
+        new_index.push(new_index.last().unwrap() + size);
+
+        if size == 1 {
+            for edge in graph.edges(vertex).positive() {
+                if vertex < edge.to {
+                    break;
+                }
+                writeln!(
+                    &mut writer,
+                    "{} {}",
+                    new_index[vertex as usize], new_index[edge.to as usize]
+                )?
+            }
+        } else if size > 1 {
+            for from in new_index[vertex as usize]..(new_index[vertex as usize] + size) {
+                for from2 in new_index[vertex as usize]..from {
+                    writeln!(&mut writer, "{} {}", from, from2)?
+                }
+
+                for edge in graph.edges(vertex).positive() {
+                    if vertex < edge.to {
+                        break;
+                    }
+                    writeln!(&mut writer, "{} {}", from, new_index[edge.to as usize])?
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
