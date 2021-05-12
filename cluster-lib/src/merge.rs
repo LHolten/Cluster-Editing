@@ -70,36 +70,62 @@ impl Graph {
         (cost, index)
     }
 
-    pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<'_> {
+    pub fn un_merge(&mut self, v1: u32, v2: u32) {
+        let v3 = self.vertices.pop().unwrap();
+        for edge in v3.edges {
+            self[edge.to].edges.pop().unwrap();
+        }
+        self[v1].merged = None;
+        self[v2].merged = None;
+    }
+
+    pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<EdgeIter<'_>> {
         MergeEdges {
             a: self.edges(v1).peekable(),
             b: self.edges(v2).peekable(),
         }
     }
-}
 
-#[derive(Clone)]
-pub struct MergeEdges<'a> {
-    a: Peekable<EdgeIter<'a>>,
-    b: Peekable<EdgeIter<'a>>,
-}
-
-impl<'a> MergeEdges<'a> {
-    // also counts the edges to each other, so subtract 2
-    pub fn count_diff(&mut self) -> u32 {
-        self.filter(|(a, b)| match (a, b) {
+    pub fn conflict_edges(
+        &self,
+        v1: u32,
+        v2: u32,
+    ) -> impl '_ + Iterator<Item = (Option<Edge>, Option<Edge>)> {
+        MergeEdges {
+            a: self.edges(v1).not_none().peekable(),
+            b: self.edges(v2).not_none().peekable(),
+        }
+        .filter(move |(a, b)| match (a, b) {
             (None, None) => unreachable!(),
-            (None, Some(b)) => b.weight > 0 && b.version == u32::MAX,
-            (Some(a), None) => a.weight > 0 && a.version == u32::MAX,
-            (Some(a), Some(b)) => {
-                (a.weight > 0 && a.version == u32::MAX) ^ (b.weight > 0 && b.version == u32::MAX)
-            }
+            (None, Some(b)) => b.weight > 0 && b.to != v1,
+            (Some(a), None) => a.weight > 0 && a.to != v2,
+            (Some(a), Some(b)) => (a.weight > 0) ^ (b.weight > 0),
         })
-        .count() as u32
+    }
+
+    pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
+        let mut cost = 0;
+        for (a, b) in self.conflict_edges(v1, v2) {
+            if a.is_none() {
+                cost += b.unwrap().weight;
+            } else if b.is_none() {
+                cost += a.unwrap().weight;
+            } else {
+                // this needs to be at least one
+                cost += min(a.unwrap().weight.abs(), b.unwrap().weight.abs())
+            }
+        }
+        cost as u32
     }
 }
 
-impl<'a> Iterator for MergeEdges<'a> {
+#[derive(Clone)]
+pub struct MergeEdges<T: Iterator<Item = Edge>> {
+    a: Peekable<T>,
+    b: Peekable<T>,
+}
+
+impl<T: Iterator<Item = Edge>> Iterator for MergeEdges<T> {
     type Item = (Option<Edge>, Option<Edge>);
 
     fn next(&mut self) -> Option<Self::Item> {

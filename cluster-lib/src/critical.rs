@@ -1,35 +1,44 @@
-use std::cell::Cell;
+use crate::graph::Graph;
 
-use crate::graph::{ClusterIter, EdgeIter, Graph};
+pub fn critical(graph: &mut Graph) -> u32 {
+    let mut cost = 0;
+    for mut vertex in graph.clusters().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).collect::<Vec<_>>() {
+            if edge.to > vertex {
+                break;
+            }
+            if edge.weight <= 0 || edge.version != u32::MAX {
+                continue;
+            }
+            if graph.conflict_edges(vertex, edge.to).count() == 0 {
+                let (new_cost, new_vertex) = graph.merge(vertex, edge.to);
+                cost += new_cost;
+                vertex = new_vertex;
+            }
+        }
+    }
+    cost
+}
 
-// fn critical(graph: Graph) -> Graph {
-//     let mut new_vertices = Vec::new();
-//     let mut new_indices = Vec::new();
-//     for (i, this) in graph.iter().enumerate() {
-//         for edge in this.edges {
-//             let j = edge.index as usize;
-//             if j > i {
-//                 new_indices.push(new_vertices.len());
-//                 new_vertices.push(this.clone());
-//                 break;
-//             }
-//             let that = &graph[j];
-//             if this.edges | i == that.edges | j {
-//                 let index = new_indices[j];
-//                 new_indices.push(index);
-//                 new_vertices[index] = &new_vertices[index] + this;
-//                 break;
-//             }
-//         }
-//     }
-//     new_vertices
-// }
+pub fn propagate(graph: &mut Graph, upper: u32) -> u32 {
+    let mut cost = 0;
+    for vertex in graph.clusters().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).collect::<Vec<_>>() {
+            if edge.to > vertex {
+                break;
+            }
+            if edge.weight <= 0 || edge.version != u32::MAX {
+                continue;
+            }
+            let cost2 = graph.merge_cost(vertex, edge.to);
 
-// fn propagate(graph: &mut Graph) {
-//     let graph_cell = Cell::from_mut(graph);
-//     for v1 in ClusterIter::new(graph_cell) {
-//         for v2 in EdgeIter::new(graph_cell, &v1) {
-//             for v3 in EdgeIter::new(graph_cell, &(&v1 + v2)) {}
-//         }
-//     }
-// }
+            if cost + cost2 >= upper {
+                cost += graph.cut(vertex, edge.to);
+                if cost >= upper {
+                    return upper;
+                }
+            }
+        }
+    }
+    cost
+}

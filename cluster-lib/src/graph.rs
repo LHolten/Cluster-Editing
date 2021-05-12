@@ -2,13 +2,13 @@ use std::{ops, slice::Iter};
 
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
     versions: Vec<u32>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vertex {
     pub merged: Option<u32>,
     pub size: u32,
@@ -25,7 +25,7 @@ impl Default for Vertex {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
     pub to: u32,
@@ -153,5 +153,15 @@ impl<'a> Iterator for EdgeIter<'a> {
                 return Some(*edge);
             }
         }
+    }
+}
+
+impl<'a> EdgeIter<'a> {
+    pub fn not_none(self) -> impl 'a + Iterator<Item = Edge> {
+        self.filter(|e| e.version == u32::MAX)
+    }
+
+    pub fn positive(self) -> impl 'a + Iterator<Item = Edge> {
+        self.filter(|e| e.weight > 0 && e.version == u32::MAX)
     }
 }

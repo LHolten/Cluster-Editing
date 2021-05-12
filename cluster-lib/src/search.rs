@@ -11,6 +11,10 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
         let (mut cost, v3) = graph.merge(v1, v2);
         debug_assert!(cost > 0);
 
+        if cost >= upper {
+            return upper;
+        }
+
         for edge in graph.edges(v3).collect::<Vec<Edge>>() {
             if edge.weight <= 0 || edge.version != u32::MAX {
                 continue;
@@ -22,13 +26,14 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
                 upper = search_graph(graph, upper - cost - cost2) + cost + cost2;
             }
             graph.rollback();
-            cost += graph.cut(v3, edge.to)
+            cost += graph.cut(v3, edge.to);
+
+            if cost >= upper {
+                return upper;
+            }
         }
 
-        if cost < upper {
-            upper = search_graph(graph, upper - cost) + cost;
-        }
-        upper
+        search_graph(graph, upper - cost) + cost
     } else {
         0
     }
