@@ -1,5 +1,3 @@
-use std::cmp::max;
-
 use crate::graph::Graph;
 
 impl Graph {
@@ -16,10 +14,10 @@ impl Graph {
                     break;
                 }
 
-                let mut count = self.merge_cost(vertex, edge.to);
-                if count >= 2 {
-                    count = max(count, edge.weight as u32);
-                }
+                let count = self.merge_cost(vertex, edge.to);
+                // if count >= 2 {
+                //     count = max(count, edge.weight as u32);
+                // }
                 if count > best_count {
                     best_count = count;
                     best = Some((vertex, edge.to))

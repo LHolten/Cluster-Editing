@@ -4,7 +4,7 @@ use crate::graph::{Edge, Graph};
 
 pub fn kernelize(graph: &mut Graph) -> u32 {
     let mut cost = 0;
-    for mut vertex in 0..graph.vertices.len() as u32 {
+    for vertex in 0..graph.vertices.len() as u32 {
         if graph[vertex].merged.is_some() {
             // also possible to merge only with vertices before
             continue;
@@ -16,9 +16,7 @@ pub fn kernelize(graph: &mut Graph) -> u32 {
         }
         if rho <= inner.len() as u32 {
             for edge in inner {
-                let (new_cost, new_vertex) = graph.merge(vertex, edge.to);
-                vertex = new_vertex;
-                cost += new_cost;
+                cost += graph.merge(vertex, edge.to).0;
             }
         }
     }
