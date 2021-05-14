@@ -4,36 +4,14 @@ use std::{
     ops::Neg,
 };
 
-use crate::graph::{Edge, EdgeIter, Graph, Vertex};
+use crate::graph::{Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: u32, v2: u32) -> (u32, u32) {
         let mut edges = Vec::new();
         let mut cost = 0;
-        for (mut a, mut b) in self.merge_edges(v1, v2) {
-            if a.is_none() {
-                let b = b.unwrap();
-                if b.to == v1 {
-                    continue;
-                }
-                a = Some(Edge {
-                    weight: ((self[v1].size * self[b.to].size) as i32).neg(),
-                    ..b
-                })
-            }
-            if b.is_none() {
-                let a = a.unwrap();
-                if a.to == v2 {
-                    continue;
-                }
-                b = Some(Edge {
-                    weight: ((self[v2].size * self[a.to].size) as i32).neg(),
-                    ..a
-                })
-            }
-            let mut a = a.unwrap();
-            let mut b = b.unwrap();
+        for (mut a, mut b) in self.edge_pairs(v1, v2) {
             edges.push(Edge {
                 weight: a.weight + b.weight,
                 to: a.to,
@@ -79,10 +57,36 @@ impl Graph {
         self[v2].merged = None;
     }
 
-    pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<EdgeIter<'_>> {
+    pub fn edge_pairs(&self, v1: u32, v2: u32) -> impl '_ + Iterator<Item = (Edge, Edge)> {
         MergeEdges {
             a: self.edges(v1).peekable(),
             b: self.edges(v2).peekable(),
+        }
+        .filter_map(move |(a, b)| match (a, b) {
+            (None, None) => unreachable!(),
+            (None, Some(b)) => {
+                if b.to == v1 {
+                    None
+                } else {
+                    Some((self.missing_edge(v1, b.to), b))
+                }
+            }
+            (Some(a), None) => {
+                if a.to == v2 {
+                    None
+                } else {
+                    Some((a, self.missing_edge(v2, a.to)))
+                }
+            }
+            (Some(a), Some(b)) => Some((a, b)),
+        })
+    }
+
+    fn missing_edge(&self, v1: u32, v2: u32) -> Edge {
+        Edge {
+            weight: ((self[v1].size * self[v2].size) as i32).neg(),
+            to: v2,
+            version: u32::MAX,
         }
     }
 
@@ -92,14 +96,14 @@ impl Graph {
         v2: u32,
     ) -> impl '_ + Iterator<Item = (Option<Edge>, Option<Edge>)> {
         MergeEdges {
-            a: self.edges(v1).not_none().peekable(),
-            b: self.edges(v2).not_none().peekable(),
+            a: self.edges(v1).positive().peekable(),
+            b: self.edges(v2).positive().peekable(),
         }
         .filter(move |(a, b)| match (a, b) {
             (None, None) => unreachable!(),
-            (None, Some(b)) => b.weight > 0 && b.to != v1,
-            (Some(a), None) => a.weight > 0 && a.to != v2,
-            (Some(a), Some(b)) => (a.weight > 0) ^ (b.weight > 0),
+            (None, Some(b)) => b.to != v1,
+            (Some(a), None) => a.to != v2,
+            (Some(_), Some(_)) => false,
         })
     }
 
@@ -107,13 +111,11 @@ impl Graph {
     pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
         let mut cost = 0;
         for (a, b) in self.conflict_edges(v1, v2) {
-            if a.is_none() {
-                cost += b.unwrap().weight;
-            } else if b.is_none() {
-                cost += a.unwrap().weight;
-            } else {
-                // this needs to be at least one
-                cost += min(a.unwrap().weight.abs(), b.unwrap().weight.abs())
+            match (a, b) {
+                (None, None) => unreachable!(),
+                (None, Some(b)) => cost += b.weight,
+                (Some(a), None) => cost += a.weight,
+                (Some(a), Some(b)) => cost += min(a.weight.abs(), b.weight.abs()),
             }
         }
         cost as u32

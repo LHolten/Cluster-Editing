@@ -94,7 +94,8 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
                     new_index[vertex as usize], new_index[edge.to as usize]
                 )?
             }
-        } else if size > 1 {
+        }
+        if size > 1 {
             for from in new_index[vertex as usize]..(new_index[vertex as usize] + size) {
                 for from2 in new_index[vertex as usize]..from {
                     writeln!(&mut writer, "{} {}", from, from2)?

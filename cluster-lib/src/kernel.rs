@@ -25,7 +25,7 @@ pub fn kernelize(graph: &mut Graph) -> u32 {
 
 pub fn kernel2(graph: &mut Graph) -> u32 {
     let mut cost = 0;
-    for mut vertex in 0..graph.vertices.len() as u32 {
+    for vertex in 0..graph.vertices.len() as u32 {
         for edge in graph.edges(vertex).collect::<Vec<_>>() {
             let conflicts = graph.conflict_edges(vertex, edge.to).collect::<Vec<_>>();
             if conflicts.len() == 1 {
