@@ -4,6 +4,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
     if let Some((v1, v2)) = graph.best_edge() {
         graph.snapshot();
         let cost = graph.cut(v1, v2);
+        debug_assert!(cost > 0);
         if cost < upper {
             upper = search_graph(graph, upper - cost) + cost;
         }

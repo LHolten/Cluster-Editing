@@ -103,6 +103,7 @@ impl Graph {
         })
     }
 
+    // does not calculate the actual cost of merging
     pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
         let mut cost = 0;
         for (a, b) in self.conflict_edges(v1, v2) {
