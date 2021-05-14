@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use crate::graph::{Edge, Graph};
 
 pub fn kernelize(graph: &mut Graph) -> u32 {
@@ -10,7 +12,7 @@ pub fn kernelize(graph: &mut Graph) -> u32 {
         let inner = graph.edges(vertex).positive().collect::<Vec<_>>();
         let mut rho = 0;
         for edge in &inner {
-            rho += graph.merge_cost(vertex, edge.to)
+            rho += graph.merge_rho(vertex, edge.to)
         }
         if rho <= inner.len() as u32 {
             for edge in inner {
@@ -23,23 +25,31 @@ pub fn kernelize(graph: &mut Graph) -> u32 {
     cost
 }
 
+// only works on graph with no merged vertices
 pub fn kernel2(graph: &mut Graph) -> u32 {
     let mut cost = 0;
     for vertex in 0..graph.vertices.len() as u32 {
-        for edge in graph.edges(vertex).collect::<Vec<_>>() {
-            let conflicts = graph.conflict_edges(vertex, edge.to).collect::<Vec<_>>();
+        for edge in graph.edges(vertex).positive().collect::<Vec<_>>() {
+            let mut v1 = vertex;
+            let mut v2 = edge.to;
+            let conflicts = graph.conflict_edges(v1, v2).collect::<Vec<_>>();
             if conflicts.len() == 1 {
-                let (v1, v2) = conflicts[0];
-                let v3 = v1.or(v2).unwrap().to;
-                let conflict_count = graph.conflict_edges(vertex, v3).count();
+                let (a, b) = conflicts[0];
+                if a.is_some() {
+                    swap(&mut v1, &mut v2);
+                }
+                let v3 = a.or(b).unwrap().to;
+                // now we have v1 -- v2 -- v3
+
+                let conflict_count = graph.conflict_edges(v1, v3).count();
                 if conflict_count == 0 {
-                    graph[vertex].edges.push(Edge::new(v3));
-                    graph[vertex].edges.sort_by_key(|e| e.to);
-                    graph[v3].edges.push(Edge::new(vertex));
+                    graph[v1].edges.push(Edge::new(v3));
+                    graph[v1].edges.sort_by_key(|e| e.to);
+                    graph[v3].edges.push(Edge::new(v1));
                     graph[v3].edges.sort_by_key(|e| e.to);
                     cost += 1;
-                } else if conflict_count == graph.edges(vertex).count() {
-                    // graph.cut(vertex, v2)
+                } else if conflict_count == graph.edges(v3).count() - 1 {
+                    cost += graph.cut(v2, v3);
                 }
             }
         }

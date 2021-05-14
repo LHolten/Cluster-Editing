@@ -12,7 +12,7 @@ mod tests {
 
     use crate::{
         disk::{load, write},
-        kernel::kernelize,
+        kernel::{kernel2, kernelize},
         search::search_graph,
     };
 
@@ -30,7 +30,8 @@ mod tests {
         for instance in (1..200).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
-            let d = kernelize(&mut graph);
+            let mut d = kernel2(&mut graph);
+            d += kernelize(&mut graph);
             let out_file = format!("../exact/kernel{:03}.gr", instance);
             write(&mut graph, File::create(out_file).unwrap()).unwrap();
             println!("{}", d);

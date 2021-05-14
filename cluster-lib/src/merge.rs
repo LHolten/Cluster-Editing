@@ -107,18 +107,26 @@ impl Graph {
         })
     }
 
-    // does not calculate the actual cost of merging
     pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
         let mut cost = 0;
-        for (a, b) in self.conflict_edges(v1, v2) {
-            match (a, b) {
-                (None, None) => unreachable!(),
-                (None, Some(b)) => cost += b.weight,
-                (Some(a), None) => cost += a.weight,
-                (Some(a), Some(b)) => cost += min(a.weight.abs(), b.weight.abs()),
+        for (mut a, mut b) in self.edge_pairs(v1, v2) {
+            if a.version != u32::MAX {
+                a.weight = -i32::MAX
+            }
+            if b.version != u32::MAX {
+                b.weight = -i32::MAX
+            }
+            if (a.weight <= 0) ^ (b.weight <= 0) {
+                cost += min(a.weight.abs(), b.weight.abs());
             }
         }
         cost as u32
+    }
+
+    pub fn merge_rho(&self, v1: u32, v2: u32) -> u32 {
+        self.conflict_edges(v1, v2)
+            .map(|(a, b)| a.or(b).unwrap().weight)
+            .sum::<i32>() as u32
     }
 }
 
