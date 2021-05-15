@@ -16,7 +16,8 @@ pub fn kernelize(graph: &mut Graph) -> u32 {
         }
         if rho <= inner.len() as u32 {
             for edge in inner {
-                cost += graph.merge(vertex, edge.to).0;
+                cost += graph.merge_cost(vertex, edge.to);
+                graph.merge(vertex, edge.to);
             }
         }
     }

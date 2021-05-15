@@ -36,15 +36,10 @@ pub fn pack(graph: &Graph) -> u32 {
                 if a.marked.get() || b.marked.get() {
                     continue;
                 }
-                if edge.version == u32::MAX {
-                    edge.marked.set(true);
-                }
-                if a.version == u32::MAX {
-                    a.marked.set(true);
-                }
-                if b.version == u32::MAX {
-                    b.marked.set(true);
-                }
+                edge.marked.set(edge.version == u32::MAX);
+                a.marked.set(a.version == u32::MAX);
+                b.marked.set(b.version == u32::MAX);
+
                 cost += min(edge.weight.abs(), min(a.weight.abs(), b.weight.abs()));
                 break;
             }
