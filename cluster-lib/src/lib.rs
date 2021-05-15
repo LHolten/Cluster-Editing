@@ -4,6 +4,7 @@ pub mod disk;
 mod graph;
 pub mod kernel;
 mod merge;
+mod packing;
 pub mod search;
 
 #[cfg(test)]
@@ -12,7 +13,7 @@ mod tests {
 
     use crate::{
         disk::{load, write},
-        kernel::{kernel2, kernelize},
+        // kernel::{kernel2, kernelize},
         search::search_graph,
     };
 
@@ -25,16 +26,16 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_kernelize() {
-        for instance in (1..200).step_by(2) {
-            let file_name = format!("../exact/exact{:03}.gr", instance);
-            let mut graph = load(File::open(file_name).unwrap()).unwrap();
-            let mut d = kernel2(&mut graph);
-            d += kernelize(&mut graph);
-            let out_file = format!("../exact/kernel{:03}.gr", instance);
-            write(&mut graph, File::create(out_file).unwrap()).unwrap();
-            println!("{}", d);
-        }
-    }
+    // #[test]
+    // fn test_kernelize() {
+    //     for instance in (1..200).step_by(2) {
+    //         let file_name = format!("../exact/exact{:03}.gr", instance);
+    //         let mut graph = load(File::open(file_name).unwrap()).unwrap();
+    //         let mut d = kernel2(&mut graph);
+    //         d += kernelize(&mut graph);
+    //         let out_file = format!("../exact/kernel{:03}.gr", instance);
+    //         write(&mut graph, File::create(out_file).unwrap()).unwrap();
+    //         println!("{}", d);
+    //     }
+    // }
 }

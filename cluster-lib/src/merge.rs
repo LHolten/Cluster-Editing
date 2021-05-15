@@ -1,7 +1,6 @@
 use std::{
     cmp::{self, min},
     iter::Peekable,
-    ops::Neg,
 };
 
 use crate::graph::{Edge, Graph, Vertex};
@@ -10,23 +9,12 @@ impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: u32, v2: u32) -> (u32, u32) {
         let mut edges = Vec::new();
-        let mut cost = 0;
-        for (mut a, mut b) in self.edge_pairs(v1, v2) {
+        for (a, b) in self.merge_edges(v1, v2) {
             edges.push(Edge {
                 weight: a.weight + b.weight,
                 to: a.to,
                 version: min(a.version, b.version),
             });
-
-            if a.version != u32::MAX {
-                a.weight = -i32::MAX
-            }
-            if b.version != u32::MAX {
-                b.weight = -i32::MAX
-            }
-            if (a.weight <= 0) ^ (b.weight <= 0) {
-                cost += min(a.weight.abs(), b.weight.abs()) as u32;
-            }
         }
 
         let index = self.vertices.len() as u32;
@@ -45,71 +33,25 @@ impl Graph {
         });
         self[v1].merged = Some(index);
         self[v2].merged = Some(index);
-        (cost, index)
+        (self.merge_cost(v1, v2), index)
     }
 
     pub fn un_merge(&mut self, v1: u32, v2: u32) {
-        let v3 = self.vertices.pop().unwrap();
-        for edge in v3.edges {
-            self[edge.to].edges.pop().unwrap();
-        }
+        self.vertices.pop().unwrap();
         self[v1].merged = None;
         self[v2].merged = None;
     }
 
-    pub fn edge_pairs(&self, v1: u32, v2: u32) -> impl '_ + Iterator<Item = (Edge, Edge)> {
+    pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<impl '_ + Iterator<Item = Edge>> {
         MergeEdges {
             a: self.edges(v1).peekable(),
             b: self.edges(v2).peekable(),
         }
-        .filter_map(move |(a, b)| match (a, b) {
-            (None, None) => unreachable!(),
-            (None, Some(b)) => {
-                if b.to == v1 {
-                    None
-                } else {
-                    Some((self.missing_edge(v1, b.to), b))
-                }
-            }
-            (Some(a), None) => {
-                if a.to == v2 {
-                    None
-                } else {
-                    Some((a, self.missing_edge(v2, a.to)))
-                }
-            }
-            (Some(a), Some(b)) => Some((a, b)),
-        })
-    }
-
-    fn missing_edge(&self, v1: u32, v2: u32) -> Edge {
-        Edge {
-            weight: ((self[v1].size * self[v2].size) as i32).neg(),
-            to: v2,
-            version: u32::MAX,
-        }
-    }
-
-    pub fn conflict_edges(
-        &self,
-        v1: u32,
-        v2: u32,
-    ) -> impl '_ + Iterator<Item = (Option<Edge>, Option<Edge>)> {
-        MergeEdges {
-            a: self.edges(v1).positive().peekable(),
-            b: self.edges(v2).positive().peekable(),
-        }
-        .filter(move |(a, b)| match (a, b) {
-            (None, None) => unreachable!(),
-            (None, Some(b)) => b.to != v1,
-            (Some(a), None) => a.to != v2,
-            (Some(_), Some(_)) => false,
-        })
     }
 
     pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
         let mut cost = 0;
-        for (mut a, mut b) in self.edge_pairs(v1, v2) {
+        for (mut a, mut b) in self.merge_edges(v1, v2) {
             if a.version != u32::MAX {
                 a.weight = -i32::MAX
             }
@@ -124,8 +66,9 @@ impl Graph {
     }
 
     pub fn merge_rho(&self, v1: u32, v2: u32) -> u32 {
-        self.conflict_edges(v1, v2)
-            .map(|(a, b)| a.or(b).unwrap().weight)
+        self.merge_edges(v1, v2)
+            .conflicts()
+            .map(|(a, b)| b.weight.abs())
             .sum::<i32>() as u32
     }
 }
@@ -137,18 +80,32 @@ pub struct MergeEdges<T: Iterator<Item = Edge>> {
 }
 
 impl<T: Iterator<Item = Edge>> Iterator for MergeEdges<T> {
-    type Item = (Option<Edge>, Option<Edge>);
+    type Item = (Edge, Edge);
 
     fn next(&mut self) -> Option<Self::Item> {
-        match (self.a.peek(), self.b.peek()) {
-            (None, None) => None,
-            (None, Some(_)) => Some((None, self.b.next())),
-            (Some(_), None) => Some((self.a.next(), None)),
-            (Some(a), Some(b)) => match a.to.cmp(&b.to) {
-                cmp::Ordering::Less => Some((self.a.next(), None)),
-                cmp::Ordering::Equal => Some((self.a.next(), self.b.next())),
-                cmp::Ordering::Greater => Some((None, self.b.next())),
-            },
+        loop {
+            break match (self.a.peek(), self.b.peek()) {
+                (Some(a), Some(b)) => match a.to.cmp(&b.to) {
+                    cmp::Ordering::Equal => Some((self.a.next().unwrap(), self.b.next().unwrap())),
+                    cmp::Ordering::Less => {
+                        self.a.next();
+                        continue;
+                    }
+                    cmp::Ordering::Greater => {
+                        self.b.next();
+                        continue;
+                    }
+                },
+                _ => None,
+            };
         }
+    }
+}
+
+impl<T: Iterator<Item = Edge>> MergeEdges<T> {
+    pub fn conflicts(self) -> impl Iterator<Item = (Edge, Edge)> {
+        self.filter(|(a, b)| {
+            (a.version == u32::MAX && a.weight > 0) ^ (b.version == u32::MAX && b.weight > 0)
+        })
     }
 }

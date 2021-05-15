@@ -1,7 +1,6 @@
-use std::io::Write;
 use std::{
     fs::File,
-    io::{self, BufRead, BufReader, BufWriter},
+    io::{self, BufRead, BufReader, BufWriter, Write},
 };
 
 use crate::graph::{Edge, Graph};
@@ -41,6 +40,29 @@ pub fn load(file: File) -> io::Result<Graph> {
 
     for vertex in &mut graph.vertices {
         vertex.edges.sort_by_key(|e| e.to)
+    }
+
+    for vertex in graph.clusters().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).positive().collect::<Vec<_>>() {
+            for edge2 in graph.edges(edge.to).positive().collect::<Vec<_>>() {
+                if edge2.to == vertex {
+                    continue;
+                }
+                let pos = graph[vertex]
+                    .edges
+                    .binary_search_by_key(&edge2.to, |e| e.to);
+                if let Err(pos) = pos {
+                    graph[vertex].edges.insert(
+                        pos,
+                        Edge {
+                            weight: -1,
+                            to: edge2.to,
+                            version: u32::MAX,
+                        },
+                    )
+                }
+            }
+        }
     }
 
     Ok(graph)
