@@ -1,6 +1,10 @@
-use crate::graph::{Edge, Graph};
+use crate::{graph::Graph, packing::pack};
 
 pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
+    let lower = pack(graph);
+    if lower >= upper {
+        return upper;
+    }
     if let Some((v1, v2)) = graph.best_edge() {
         graph.snapshot();
         let cost = graph.cut(v1, v2);
@@ -16,7 +20,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32) -> u32 {
             return upper;
         }
 
-        for edge in graph.edges(v3).positive().collect::<Vec<Edge>>() {
+        for edge in graph.edges(v3).positive().cloned().collect::<Vec<_>>() {
             graph.snapshot();
             let (cost2, _) = graph.merge(v3, edge.to);
             if cost + cost2 < upper {

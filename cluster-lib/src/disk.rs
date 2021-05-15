@@ -43,8 +43,8 @@ pub fn load(file: File) -> io::Result<Graph> {
     }
 
     for vertex in graph.clusters().collect::<Vec<_>>() {
-        for edge in graph.edges(vertex).positive().collect::<Vec<_>>() {
-            for edge2 in graph.edges(edge.to).positive().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+            for edge2 in graph.edges(edge.to).positive().cloned().collect::<Vec<_>>() {
                 if edge2.to == vertex {
                     continue;
                 }
@@ -58,6 +58,7 @@ pub fn load(file: File) -> io::Result<Graph> {
                             weight: -1,
                             to: edge2.to,
                             version: u32::MAX,
+                            marked: Default::default(),
                         },
                     )
                 }

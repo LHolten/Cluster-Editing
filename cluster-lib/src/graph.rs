@@ -1,4 +1,4 @@
-use std::{ops, slice::Iter};
+use std::{cell::Cell, ops, slice::Iter};
 
 use std::ops::{Index, IndexMut};
 
@@ -25,11 +25,12 @@ impl Default for Vertex {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
     pub to: u32,
     pub version: u32,
+    pub marked: Cell<bool>,
 }
 
 impl Edge {
@@ -38,6 +39,7 @@ impl Edge {
             weight: 1,
             to,
             version: u32::MAX,
+            marked: Default::default(),
         }
     }
 }
@@ -144,24 +146,24 @@ pub struct EdgeIter<'a> {
 }
 
 impl<'a> Iterator for EdgeIter<'a> {
-    type Item = Edge;
+    type Item = &'a Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let edge = self.edges.next()?;
             if self.graph.vertices[edge.to as usize].merged.is_none() {
-                return Some(*edge);
+                return Some(edge);
             }
         }
     }
 }
 
 impl<'a> EdgeIter<'a> {
-    pub fn not_none(self) -> impl 'a + Iterator<Item = Edge> {
+    pub fn not_none(self) -> impl Iterator<Item = &'a Edge> {
         self.filter(|e| e.version == u32::MAX)
     }
 
-    pub fn positive(self) -> impl 'a + Iterator<Item = Edge> {
+    pub fn positive(self) -> impl 'a + Iterator<Item = &'a Edge> {
         self.filter(|e| e.weight > 0 && e.version == u32::MAX)
     }
 }

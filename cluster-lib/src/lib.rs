@@ -13,7 +13,7 @@ mod tests {
 
     use crate::{
         disk::{load, write},
-        // kernel::{kernel2, kernelize},
+        kernel::{kernel2, kernelize},
         search::search_graph,
     };
 

@@ -20,7 +20,7 @@ use crate::graph::Graph;
 pub fn propagate(graph: &mut Graph, upper: u32) -> u32 {
     let mut cost = 0;
     for vertex in graph.clusters().collect::<Vec<_>>() {
-        for edge in graph.edges(vertex).positive().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
             if edge.to > vertex {
                 break;
             }
