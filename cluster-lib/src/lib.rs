@@ -15,7 +15,7 @@ mod tests {
         critical::critical,
         disk::{load, write},
         kernel::{kernel2, kernelize},
-        search::search_graph,
+        search::{search_graph, search_graph_2},
     };
 
     #[test]
@@ -23,7 +23,7 @@ mod tests {
         for instance in (1..50).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
-            critical(&mut graph);
+            // critical(&mut graph);
             println!("{}", search_graph(&mut graph, u32::MAX));
         }
     }

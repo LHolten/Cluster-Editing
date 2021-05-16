@@ -166,4 +166,8 @@ impl<'a> EdgeIter<'a> {
     pub fn positive(self) -> impl 'a + Iterator<Item = &'a Edge> {
         self.filter(|e| e.weight > 0 && e.version == u32::MAX)
     }
+
+    pub fn negative(self) -> impl 'a + Iterator<Item = &'a Edge> {
+        self.filter(|e| e.weight <= 0 && e.version == u32::MAX)
+    }
 }
