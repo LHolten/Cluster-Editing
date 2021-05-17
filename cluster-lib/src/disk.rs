@@ -42,34 +42,34 @@ pub fn load(file: File) -> io::Result<Graph> {
         vertex.edges.sort_by_key(|e| e.to)
     }
 
-    for vertex in graph.clusters().collect::<Vec<_>>() {
-        for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
-            for edge2 in graph.edges(edge.to).positive().cloned().collect::<Vec<_>>() {
-                if edge2.to == vertex {
-                    continue;
-                }
-                let pos = graph[vertex]
-                    .edges
-                    .binary_search_by_key(&edge2.to, |e| e.to);
-                if let Err(pos) = pos {
-                    graph[vertex].edges.insert(
-                        pos,
-                        Edge {
-                            weight: -1,
-                            to: edge2.to,
-                            version: u32::MAX,
-                            marked: Default::default(),
-                        },
-                    )
+    Ok(graph)
+}
+
+impl Graph {
+    pub fn add_indirect_edges(&mut self) {
+        for vertex in self.clusters().collect::<Vec<_>>() {
+            for edge in self.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+                for edge2 in self.edges(edge.to).positive().cloned().collect::<Vec<_>>() {
+                    if edge2.to == vertex {
+                        continue;
+                    }
+                    let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
+                    if let Err(pos) = pos {
+                        self[vertex].edges.insert(
+                            pos,
+                            Edge {
+                                weight: -1,
+                                to: edge2.to,
+                                version: u32::MAX,
+                                marked: Default::default(),
+                            },
+                        )
+                    }
                 }
             }
         }
     }
 
-    Ok(graph)
-}
-
-impl Graph {
     fn vertex_size(&self, index: u32) -> u32 {
         let edges = self.edges(index).positive().collect::<Vec<_>>();
         if edges.is_empty() {
