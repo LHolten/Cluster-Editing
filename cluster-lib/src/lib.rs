@@ -16,6 +16,7 @@ mod tests {
         critical::critical,
         disk::{load, write},
         kernel::{kernel2, kernelize},
+        packing::pack,
         search::{search_graph, search_graph_2},
         simplify::simplify,
     };
@@ -38,6 +39,26 @@ mod tests {
             simplify(&mut graph, 40);
             search_graph_2(&mut graph, u32::MAX, &mut 0);
             graph.rollback();
+        }
+    }
+
+    #[test]
+    fn lower_bound() {
+        let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
+        let mut bounds = Vec::new();
+        loop {
+            graph.snapshot();
+            simplify(&mut graph, 40);
+            let lower = pack(&graph);
+            let actual = search_graph(&mut graph, u32::MAX, &mut 0);
+            graph.rollback();
+            bounds.push((lower, actual));
+            let percentage = bounds
+                .iter()
+                .map(|(l, a)| *l as f32 / *a as f32)
+                .sum::<f32>()
+                / bounds.len() as f32;
+            println!("{:.1}%", 100. * percentage)
         }
     }
 
