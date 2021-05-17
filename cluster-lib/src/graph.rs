@@ -2,6 +2,9 @@ use std::{cell::Cell, ops, slice::Iter};
 
 use std::ops::{Index, IndexMut};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VertexIndex(pub u32);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
@@ -10,7 +13,7 @@ pub struct Graph {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vertex {
-    pub merged: Option<u32>,
+    pub merged: Option<VertexIndex>,
     pub size: u32,
     pub edges: Vec<Edge>,
 }
@@ -28,13 +31,13 @@ impl Default for Vertex {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
-    pub to: u32,
+    pub to: VertexIndex,
     pub version: u32,
     pub marked: Cell<bool>,
 }
 
 impl Edge {
-    pub fn new(to: u32) -> Self {
+    pub fn new(to: VertexIndex) -> Self {
         Self {
             weight: 1,
             to,
@@ -62,12 +65,12 @@ impl Graph {
         self.vertices.truncate(len as usize);
 
         for vertex in &mut self.vertices {
-            if vertex.merged.is_some() && vertex.merged.unwrap() >= len {
+            if vertex.merged.is_some() && vertex.merged.unwrap().0 >= len {
                 vertex.merged = None
             }
             let mut edge_len = vertex.edges.len();
             for (i, edge) in vertex.edges.iter_mut().enumerate() {
-                if edge.to >= len {
+                if edge.to.0 >= len {
                     edge_len = i;
                     break;
                 }
@@ -80,7 +83,7 @@ impl Graph {
     }
 
     // requires edge between vertices to be positive
-    pub fn cut(&mut self, v1: u32, v2: u32) -> u32 {
+    pub fn cut(&mut self, v1: VertexIndex, v2: VertexIndex) -> u32 {
         let version = self.versions.len() as u32;
         let edges = &mut self[v1].edges;
         let index = edges.binary_search_by_key(&v2, |e| e.to).unwrap();
@@ -99,7 +102,7 @@ impl Graph {
         }
     }
 
-    pub fn edges(&self, index: u32) -> EdgeIter<'_> {
+    pub fn edges(&self, index: VertexIndex) -> EdgeIter<'_> {
         EdgeIter {
             graph: self,
             edges: self[index].edges.iter(),
@@ -107,17 +110,17 @@ impl Graph {
     }
 }
 
-impl Index<u32> for Graph {
+impl Index<VertexIndex> for Graph {
     type Output = Vertex;
 
-    fn index(&self, index: u32) -> &Self::Output {
-        &self.vertices[index as usize]
+    fn index(&self, index: VertexIndex) -> &Self::Output {
+        &self.vertices[index.0 as usize]
     }
 }
 
-impl IndexMut<u32> for Graph {
-    fn index_mut(&mut self, index: u32) -> &mut Self::Output {
-        &mut self.vertices[index as usize]
+impl IndexMut<VertexIndex> for Graph {
+    fn index_mut(&mut self, index: VertexIndex) -> &mut Self::Output {
+        &mut self.vertices[index.0 as usize]
     }
 }
 
@@ -127,13 +130,13 @@ pub struct ClusterIter<'a> {
 }
 
 impl<'a> Iterator for ClusterIter<'a> {
-    type Item = u32;
+    type Item = VertexIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.range.next()?;
             if self.graph.vertices[index as usize].merged.is_none() {
-                return Some(index);
+                return Some(VertexIndex(index));
             }
         }
     }
@@ -151,7 +154,7 @@ impl<'a> Iterator for EdgeIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let edge = self.edges.next()?;
-            if self.graph.vertices[edge.to as usize].merged.is_none() {
+            if self.graph[edge.to].merged.is_none() {
                 return Some(edge);
             }
         }

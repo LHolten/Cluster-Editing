@@ -1,51 +1,6 @@
 use crate::{graph::Graph, packing::pack};
 
-pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
-    *count += 1;
-    graph.add_indirect_edges();
-    // let lower = pack(graph);
-    // if lower >= upper {
-    //     return upper;
-    // }
-    if let Some((v1, v2)) = graph.best_edge() {
-        graph.snapshot();
-        let cost1 = graph.cut(v1, v2);
-        debug_assert!(cost1 > 0);
-        if cost1 < upper {
-            upper = search_graph(graph, upper - cost1, count) + cost1;
-        }
-        graph.rollback();
-        let mut cost = graph.merge_cost(v1, v2);
-        let v3 = graph.merge(v1, v2);
-        debug_assert!(cost > 0);
-
-        if cost >= upper {
-            return upper;
-        }
-
-        for edge in graph.edges(v3).positive().cloned().collect::<Vec<_>>() {
-            graph.snapshot();
-            let cost2 = graph.merge_cost(v3, edge.to);
-            if cost + cost2 < upper {
-                graph.merge(v3, edge.to);
-                upper = search_graph(graph, upper - cost - cost2, count) + cost + cost2;
-            }
-            graph.rollback();
-            cost += graph.cut(v3, edge.to);
-
-            if cost >= upper {
-                return upper;
-            }
-        }
-
-        search_graph(graph, upper - cost, count) + cost
-    } else {
-        // println!("improved by: {}", upper);
-        0
-    }
-}
-
-// pub fn search_graph_2(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
+// pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
 //     *count += 1;
 //     graph.add_indirect_edges();
 //     // let lower = pack(graph);
@@ -68,12 +23,57 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32
 //             return upper;
 //         }
 
+//         for edge in graph.edges(v3).positive().cloned().collect::<Vec<_>>() {
+//             graph.snapshot();
+//             let cost2 = graph.merge_cost(v3, edge.to);
+//             if cost + cost2 < upper {
+//                 graph.merge(v3, edge.to);
+//                 upper = search_graph(graph, upper - cost - cost2, count) + cost + cost2;
+//             }
+//             graph.rollback();
+//             cost += graph.cut(v3, edge.to);
+
+//             if cost >= upper {
+//                 return upper;
+//             }
+//         }
+
 //         search_graph(graph, upper - cost, count) + cost
 //     } else {
 //         // println!("improved by: {}", upper);
 //         0
 //     }
 // }
+
+pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
+    *count += 1;
+    graph.add_indirect_edges();
+    // let lower = pack(graph);
+    // if lower >= upper {
+    //     return upper;
+    // }
+    if let Some((v1, v2)) = graph.best_edge() {
+        graph.snapshot();
+        let cost1 = graph.cut(v1, v2);
+        debug_assert!(cost1 > 0);
+        if cost1 < upper {
+            upper = search_graph(graph, upper - cost1, count) + cost1;
+        }
+        graph.rollback();
+        let cost = graph.merge_cost(v1, v2);
+        graph.merge(v1, v2);
+        debug_assert!(cost > 0); // this should fail at some point
+
+        if cost >= upper {
+            return upper;
+        }
+
+        search_graph(graph, upper - cost, count) + cost
+    } else {
+        // println!("improved by: {}", upper);
+        0
+    }
+}
 
 pub fn search_graph_2(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
     assert_ne!(upper, 0);

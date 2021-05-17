@@ -3,11 +3,11 @@ use std::{
     iter::Peekable,
 };
 
-use crate::graph::{Edge, EdgeIter, Graph, Vertex};
+use crate::graph::{Edge, EdgeIter, Graph, Vertex, VertexIndex};
 
 impl Graph {
     // requires edge between vertices to be positive
-    pub fn merge(&mut self, v1: u32, v2: u32) -> u32 {
+    pub fn merge(&mut self, v1: VertexIndex, v2: VertexIndex) -> VertexIndex {
         let mut edges = Vec::new();
         for (a, b) in self.merge_edges(v1, v2) {
             edges.push(Edge {
@@ -18,7 +18,7 @@ impl Graph {
             });
         }
 
-        let index = self.vertices.len() as u32;
+        let index = VertexIndex(self.vertices.len() as u32);
         for edge in &edges {
             self[edge.to].edges.push(Edge {
                 weight: edge.weight,
@@ -38,20 +38,20 @@ impl Graph {
         index
     }
 
-    pub fn un_merge(&mut self, v1: u32, v2: u32) {
+    pub fn un_merge(&mut self, v1: VertexIndex, v2: VertexIndex) {
         self.vertices.pop().unwrap();
         self[v1].merged = None;
         self[v2].merged = None;
     }
 
-    pub fn merge_edges(&self, v1: u32, v2: u32) -> MergeEdges<'_> {
+    pub fn merge_edges(&self, v1: VertexIndex, v2: VertexIndex) -> MergeEdges<'_> {
         MergeEdges {
             a: self.edges(v1).peekable(),
             b: self.edges(v2).peekable(),
         }
     }
 
-    pub fn merge_cost(&self, v1: u32, v2: u32) -> u32 {
+    pub fn merge_cost(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
         let mut cost = 0;
         for (a, b) in self.merge_edges(v1, v2) {
             let (mut a, mut b) = (a.clone(), b.clone());
@@ -68,7 +68,7 @@ impl Graph {
         cost as u32
     }
 
-    pub fn merge_rho(&self, v1: u32, v2: u32) -> u32 {
+    pub fn merge_rho(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
         self.merge_edges(v1, v2)
             .conflicts()
             .map(|(_, b)| b.weight.abs())

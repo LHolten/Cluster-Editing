@@ -4,7 +4,7 @@ use crate::graph::Graph;
 
 pub fn kernelize(graph: &mut Graph) -> u32 {
     let mut cost = 0;
-    for vertex in 0..graph.vertices.len() as u32 {
+    for vertex in graph.clusters().collect::<Vec<_>>() {
         if graph[vertex].merged.is_some() {
             // also possible to merge only with vertices before
             continue;
@@ -29,7 +29,7 @@ pub fn kernel2(graph: &mut Graph) -> u32 {
     let mut cost = 0;
     loop {
         let mut new_cost = 0;
-        for vertex in 0..graph.vertices.len() as u32 {
+        for vertex in graph.clusters().collect::<Vec<_>>() {
             for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
                 let mut v1 = vertex;
                 let mut v2 = edge.to;

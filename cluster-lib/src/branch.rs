@@ -1,12 +1,12 @@
 use std::cmp::min;
 
-use crate::graph::Graph;
+use crate::graph::{Graph, VertexIndex};
 
 impl Graph {
     // find best edge to split on in O(n + m^2) time
     // edge is positive
     // there is at least one conflict
-    pub fn best_edge(&mut self) -> Option<(u32, u32)> {
+    pub fn best_edge(&mut self) -> Option<(VertexIndex, VertexIndex)> {
         let mut best = None;
         let mut best_count = 0;
 
@@ -30,7 +30,7 @@ impl Graph {
         best
     }
 
-    pub fn triple(&mut self) -> Option<(u32, u32, u32, i32)> {
+    pub fn triple(&mut self) -> Option<(VertexIndex, VertexIndex, VertexIndex, i32)> {
         let mut best = None;
         let mut best_count = 0;
 

@@ -3,7 +3,7 @@ use std::{
     io::{self, BufRead, BufReader, BufWriter, Write},
 };
 
-use crate::graph::{Edge, Graph};
+use crate::graph::{Edge, Graph, VertexIndex};
 
 pub fn load(file: File) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
@@ -29,8 +29,8 @@ pub fn load(file: File) -> io::Result<Graph> {
         match words.next() {
             Some("c") => continue,
             Some(word) => {
-                let v1 = word.parse::<u32>().unwrap() - 1;
-                let v2 = words.next().unwrap().parse::<u32>().unwrap() - 1;
+                let v1 = VertexIndex(word.parse::<u32>().unwrap() - 1);
+                let v2 = VertexIndex(words.next().unwrap().parse::<u32>().unwrap() - 1);
                 graph[v1].edges.push(Edge::new(v2));
                 graph[v2].edges.push(Edge::new(v1));
             }
@@ -55,10 +55,11 @@ impl Graph {
                     }
                     let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
                     if let Err(pos) = pos {
+                        let weight = -((self[vertex].size * self[edge2.to].size) as i32);
                         self[vertex].edges.insert(
                             pos,
                             Edge {
-                                weight: -1,
+                                weight,
                                 to: edge2.to,
                                 version: u32::MAX,
                                 marked: Default::default(),
@@ -70,7 +71,7 @@ impl Graph {
         }
     }
 
-    fn vertex_size(&self, index: u32) -> u32 {
+    fn vertex_size(&self, index: VertexIndex) -> u32 {
         let edges = self.edges(index).positive().collect::<Vec<_>>();
         if edges.is_empty() {
             0
@@ -98,7 +99,7 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
     writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
 
     let mut new_index = vec![1];
-    for vertex in 0..graph.vertices.len() as u32 {
+    for vertex in graph.clusters() {
         if graph[vertex].merged.is_some() {
             new_index.push(*new_index.last().unwrap());
             continue;
@@ -114,13 +115,13 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
                 writeln!(
                     &mut writer,
                     "{} {}",
-                    new_index[vertex as usize], new_index[edge.to as usize]
+                    new_index[vertex.0 as usize], new_index[edge.to.0 as usize]
                 )?
             }
         }
         if size > 1 {
-            for from in new_index[vertex as usize]..(new_index[vertex as usize] + size) {
-                for from2 in new_index[vertex as usize]..from {
+            for from in new_index[vertex.0 as usize]..(new_index[vertex.0 as usize] + size) {
+                for from2 in new_index[vertex.0 as usize]..from {
                     writeln!(&mut writer, "{} {}", from, from2)?
                 }
 
@@ -128,7 +129,7 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
                     if vertex < edge.to {
                         break;
                     }
-                    writeln!(&mut writer, "{} {}", from, new_index[edge.to as usize])?
+                    writeln!(&mut writer, "{} {}", from, new_index[edge.to.0 as usize])?
                 }
             }
         }

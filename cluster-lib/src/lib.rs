@@ -42,7 +42,7 @@ mod tests {
 
                 graph.snapshot();
                 let mut count1 = 0;
-                let k1 = search_graph(&mut graph, u32::MAX, &mut count1);
+                let k1 = search_graph(&mut graph, i32::MAX as u32, &mut count1);
                 results1.push(count1);
                 graph.rollback();
 
