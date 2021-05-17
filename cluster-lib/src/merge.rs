@@ -107,14 +107,10 @@ impl<'a> Iterator for MergeEdges<'a> {
 
 impl<'a> MergeEdges<'a> {
     pub fn conflicts(self) -> impl Iterator<Item = (&'a Edge, &'a Edge)> {
-        self.filter(|(a, b)| {
-            (a.version == u32::MAX && a.weight > 0) ^ (b.version == u32::MAX && b.weight > 0)
-        })
+        self.filter(|(a, b)| a.positive() ^ b.positive())
     }
 
     pub fn two_edges(self) -> impl Iterator<Item = (&'a Edge, &'a Edge)> {
-        self.filter(|(a, b)| {
-            (a.version == u32::MAX && a.weight > 0) && (b.version == u32::MAX && b.weight > 0)
-        })
+        self.filter(|(a, b)| a.positive() && b.positive())
     }
 }

@@ -16,8 +16,7 @@ impl Graph {
                     break;
                 }
 
-                let count = self.merge_edges(vertex, edge.to).conflicts().count();
-                // let count = self.merge_cost(vertex, edge.to);
+                let count = self.merge_cost(vertex, edge.to);
                 // if count >= 2 {
                 //     count = max(count, edge.weight as u32);
                 // }
@@ -43,12 +42,11 @@ impl Graph {
                 if edge.version != u32::MAX {
                     edge.weight = -i32::MAX
                 }
-
                 for (a, b) in self.merge_edges(vertex, edge.to).two_edges() {
                     let count = min(edge.weight.abs(), min(a.weight.abs(), b.weight.abs()));
                     if count > best_count {
                         best_count = count;
-                        best = Some((vertex, edge.to, a.to, edge.weight))
+                        best = Some((vertex, a.to, edge.to, edge.weight))
                     }
                 }
             }

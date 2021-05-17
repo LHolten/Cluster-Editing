@@ -20,35 +20,64 @@ mod tests {
         simplify::simplify,
     };
 
+    #[test]
+    fn test() {
+        let mut graph = load(File::open("test.gr").unwrap()).unwrap();
+        // critical(&mut graph);
+        let mut count = 0;
+        println!("{}", search_graph_2(&mut graph, u32::MAX, &mut count));
+        // for instance in (1..50).step_by(2) {
+        //     let file_name = format!("../exact/exact{:03}.gr", instance);
+        //     let mut graph = load(File::open(file_name).unwrap()).unwrap();
+        //     // critical(&mut graph);
+        //     println!("{}", search_graph_2(&mut graph, u32::MAX));
+        // }
+    }
+
     // #[test]
-    // fn test() {
-    //     for instance in (1..50).step_by(2) {
-    //         let file_name = format!("../exact/exact{:03}.gr", instance);
-    //         let mut graph = load(File::open(file_name).unwrap()).unwrap();
-    //         // critical(&mut graph);
-    //         println!("{}", search_graph_2(&mut graph, u32::MAX));
+    // fn fuzz() {
+    //     let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
+    //     loop {
+    //         graph.snapshot();
+    //         simplify(&mut graph, 40);
+    //         let mut count = 0;
+    //         search_graph_2(&mut graph, u32::MAX, &mut count);
+    //         graph.rollback();
     //     }
     // }
 
     #[test]
     fn num_visited() {
         let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
-        for num_edges in (10..=50).step_by(10) {
+        let tests = vec![
+            (10, 1000),
+            (15, 1000),
+            (20, 1000),
+            (25, 200),
+            (30, 100),
+            (35, 50),
+            (40, 10),
+        ];
+        for (num_edges, times) in tests {
             let mut results1 = Vec::new();
             let mut results2 = Vec::new();
-            for _ in 0..50 {
+            for _ in 0..times {
                 graph.snapshot();
                 simplify(&mut graph, num_edges);
 
                 graph.snapshot();
+                let k = search_graph(&mut graph, u32::MAX, &mut 0);
+                graph.rollback();
+
+                graph.snapshot();
                 let mut count1 = 0;
-                let k1 = search_graph(&mut graph, i32::MAX as u32, &mut count1);
+                let k1 = search_graph(&mut graph, k, &mut count1);
                 results1.push(count1);
                 graph.rollback();
 
                 graph.snapshot();
                 let mut count2 = 0;
-                let k2 = search_graph_2(&mut graph, k1, &mut count2);
+                let k2 = search_graph_2(&mut graph, k, &mut count2);
                 results2.push(count2);
                 graph.rollback();
 

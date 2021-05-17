@@ -42,31 +42,38 @@ pub fn load(file: File) -> io::Result<Graph> {
         vertex.edges.sort_by_key(|e| e.to)
     }
 
+    graph.add_indirect_edges();
+
     Ok(graph)
 }
 
 impl Graph {
-    pub fn add_indirect_edges(&mut self) {
+    fn add_indirect_edges(&mut self) {
         for vertex in self.clusters().collect::<Vec<_>>() {
             for edge in self.edges(vertex).positive().cloned().collect::<Vec<_>>() {
-                for edge2 in self.edges(edge.to).positive().cloned().collect::<Vec<_>>() {
-                    if edge2.to == vertex {
-                        continue;
-                    }
-                    let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
-                    if let Err(pos) = pos {
-                        let weight = -((self[vertex].size * self[edge2.to].size) as i32);
-                        self[vertex].edges.insert(
-                            pos,
-                            Edge {
-                                weight,
-                                to: edge2.to,
-                                version: u32::MAX,
-                                marked: Default::default(),
-                            },
-                        )
-                    }
-                }
+                self.add_indirect(vertex, edge.to);
+            }
+        }
+    }
+
+    fn add_indirect(&mut self, v1: VertexIndex, v2: VertexIndex) {
+        for edge in self.edges(v2).positive().cloned().collect::<Vec<_>>() {
+            if edge.to == v1 {
+                continue;
+            }
+            let pos = self[v1].edges.binary_search_by_key(&edge.to, |e| e.to);
+            if let Err(pos) = pos {
+                let weight = -((self[v1].size * self[edge.to].size) as i32);
+                self[v1].edges.insert(
+                    pos,
+                    Edge {
+                        weight,
+                        to: edge.to,
+                        version: u32::MAX,
+                        marked: Default::default(),
+                    },
+                );
+                self.add_indirect(v1, edge.to);
             }
         }
     }
@@ -99,7 +106,8 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
     writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
 
     let mut new_index = vec![1];
-    for vertex in graph.clusters() {
+    for vertex in 0..graph.vertices.len() as u32 {
+        let vertex = VertexIndex(vertex);
         if graph[vertex].merged.is_some() {
             new_index.push(*new_index.last().unwrap());
             continue;
