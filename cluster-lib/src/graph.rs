@@ -99,7 +99,7 @@ impl Graph {
         let edges = &mut self[v2].edges;
         let index = edges.binary_search_by_key(&v1, |e| e.to).unwrap();
         edges[index].version = version;
-        debug_assert!(edges[index].weight > 0);
+        assert!(edges[index].weight > 0);
         edges[index].weight as u32
     }
 

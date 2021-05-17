@@ -18,7 +18,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32
         graph.rollback();
         let mut cost = graph.merge_cost(v1, v2);
         let v3 = graph.merge(v1, v2);
-        debug_assert!(cost > 0);
+        assert!(cost > 0);
 
         if cost >= upper {
             return upper;
@@ -55,19 +55,20 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32
 //     if let Some((v1, v2)) = graph.best_edge() {
 //         graph.snapshot();
 //         let cost1 = graph.cut(v1, v2);
+//         assert!(cost1 > 0);
 //         if cost1 < upper {
-//             upper = search_graph(graph, upper - cost1, count) + cost1;
+//             upper = search_graph_2(graph, upper - cost1, count) + cost1;
 //         }
 //         graph.rollback();
 //         let mut cost = graph.merge_cost(v1, v2);
 //         let v3 = graph.merge(v1, v2);
-//         assert!(cost > 0);
+//         // assert!(cost > 0);
 
 //         if cost >= upper {
 //             return upper;
 //         }
 
-//         search_graph(graph, upper - cost, count) + cost
+//         search_graph_2(graph, upper - cost, count) + cost
 //     } else {
 //         // println!("improved by: {}", upper);
 //         0

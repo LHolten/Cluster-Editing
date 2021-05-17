@@ -22,29 +22,24 @@ mod tests {
 
     #[test]
     fn test() {
-        let mut graph = load(File::open("test.gr").unwrap()).unwrap();
-        // critical(&mut graph);
-        let mut count = 0;
-        println!("{}", search_graph_2(&mut graph, u32::MAX, &mut count));
-        // for instance in (1..50).step_by(2) {
-        //     let file_name = format!("../exact/exact{:03}.gr", instance);
-        //     let mut graph = load(File::open(file_name).unwrap()).unwrap();
-        //     // critical(&mut graph);
-        //     println!("{}", search_graph_2(&mut graph, u32::MAX));
-        // }
+        for instance in (1..50).step_by(2) {
+            let file_name = format!("../exact/exact{:03}.gr", instance);
+            let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            // critical(&mut graph);
+            println!("{}", search_graph(&mut graph, u32::MAX, &mut 0));
+        }
     }
 
-    // #[test]
-    // fn fuzz() {
-    //     let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
-    //     loop {
-    //         graph.snapshot();
-    //         simplify(&mut graph, 40);
-    //         let mut count = 0;
-    //         search_graph_2(&mut graph, u32::MAX, &mut count);
-    //         graph.rollback();
-    //     }
-    // }
+    #[test]
+    fn fuzz() {
+        let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
+        loop {
+            graph.snapshot();
+            simplify(&mut graph, 40);
+            search_graph_2(&mut graph, u32::MAX, &mut 0);
+            graph.rollback();
+        }
+    }
 
     #[test]
     fn num_visited() {

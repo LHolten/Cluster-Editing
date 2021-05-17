@@ -16,7 +16,8 @@ impl Graph {
                     break;
                 }
 
-                let count = self.merge_cost(vertex, edge.to);
+                // let count = self.merge_cost(vertex, edge.to);
+                let count = self.merge_edges(vertex, edge.to).conflicts().count();
                 // if count >= 2 {
                 //     count = max(count, edge.weight as u32);
                 // }
