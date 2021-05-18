@@ -13,9 +13,7 @@ mod tests {
     use std::fs::File;
 
     use crate::{
-        critical::critical,
         disk::{load, write},
-        kernel::{kernel2, kernelize},
         packing::pack,
         search::{search_graph, search_graph_2},
         simplify::simplify,
@@ -44,11 +42,11 @@ mod tests {
 
     #[test]
     fn lower_bound() {
-        let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
+        let mut graph = load(File::open("../exact/exact007.gr").unwrap()).unwrap();
         let mut bounds = Vec::new();
         loop {
             graph.snapshot();
-            simplify(&mut graph, 40);
+            simplify(&mut graph, 120);
             let lower = pack(&graph);
             let actual = search_graph(&mut graph, u32::MAX, &mut 0);
             graph.rollback();
@@ -60,6 +58,17 @@ mod tests {
                 / bounds.len() as f32;
             println!("{:.1}%", 100. * percentage)
         }
+    }
+
+    #[test]
+    fn edge_count() {
+        let graph = load(File::open("../exact/exact007.gr").unwrap()).unwrap();
+        let mut edge_count = Vec::new();
+        for vertex in graph.clusters() {
+            edge_count.push(graph.edges(vertex).count())
+        }
+        let count = edge_count.iter().sum::<usize>() / edge_count.len();
+        println!("edge count: {}, vertices: {}", count, edge_count.len() - 1)
     }
 
     #[test]
@@ -117,12 +126,12 @@ mod tests {
     }
 
     // #[test]
-    // fn test_kernelize() {
+    // fn kernel() {
     //     for instance in (1..200).step_by(2) {
     //         let file_name = format!("../exact/exact{:03}.gr", instance);
     //         let mut graph = load(File::open(file_name).unwrap()).unwrap();
     //         let mut d = kernel2(&mut graph);
-    //         d += kernelize(&mut graph);
+    //         // d += kernelize(&mut graph);
     //         let out_file = format!("../exact/kernel{:03}.gr", instance);
     //         write(&mut graph, File::create(out_file).unwrap()).unwrap();
     //         println!("{}", d);

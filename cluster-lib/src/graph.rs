@@ -45,14 +45,6 @@ impl Edge {
             marked: Default::default(),
         }
     }
-
-    pub fn positive(&self) -> bool {
-        self.weight > 0 && self.version == u32::MAX
-    }
-
-    pub fn negative(&self) -> bool {
-        self.weight <= 0 || self.version != u32::MAX
-    }
 }
 
 impl Graph {
@@ -162,7 +154,7 @@ impl<'a> Iterator for EdgeIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let edge = self.edges.next()?;
-            if self.graph[edge.to].merged.is_none() {
+            if self.graph[edge.to].merged.is_none() && edge.version == u32::MAX {
                 return Some(edge);
             }
         }
@@ -171,10 +163,10 @@ impl<'a> Iterator for EdgeIter<'a> {
 
 impl<'a> EdgeIter<'a> {
     pub fn positive(self) -> impl 'a + Iterator<Item = &'a Edge> {
-        self.filter(|e| e.positive())
+        self.filter(|e| e.weight > 0)
     }
 
     pub fn negative(self) -> impl 'a + Iterator<Item = &'a Edge> {
-        self.filter(|e| e.negative())
+        self.filter(|e| e.weight <= 0)
     }
 }

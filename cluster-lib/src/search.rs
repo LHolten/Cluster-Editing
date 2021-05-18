@@ -1,6 +1,3 @@
-use std::fs::File;
-
-use crate::disk::write;
 use crate::{graph::Graph, packing::pack};
 
 pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {

@@ -11,36 +11,37 @@ pub fn pack(graph: &Graph) -> u32 {
 
     let mut cost = 0;
     for vertex in graph.clusters() {
-        for edge in graph.edges(vertex) {
+        for edge in graph.edges(vertex).positive() {
             if edge.to >= vertex {
                 break;
             }
             if edge.marked.get() {
                 continue;
             }
-            let iter = if edge.version == u32::MAX && edge.weight > 0 {
-                graph
-                    .merge_edges(vertex, edge.to)
-                    .conflicts()
-                    .collect::<Vec<_>>()
-            } else {
-                graph
-                    .merge_edges(vertex, edge.to)
-                    .two_edges()
-                    .collect::<Vec<_>>()
-            };
-            for (a, b) in iter {
-                if a.to >= edge.to {
+
+            for (a, b) in graph.conflict_edges(vertex, edge.to) {
+                if a.or(b).unwrap().to >= vertex {
                     break;
                 }
-                if a.marked.get() || b.marked.get() {
+                if a.map(|e| e.to >= edge.to).unwrap_or(false)
+                    || a.map(|e| e.marked.get()).unwrap_or(false)
+                    || b.map(|e| e.marked.get()).unwrap_or(false)
+                {
                     continue;
                 }
-                edge.marked.set(edge.version == u32::MAX);
-                a.marked.set(a.version == u32::MAX);
-                b.marked.set(b.version == u32::MAX);
 
-                cost += min(edge.weight.abs(), min(a.weight.abs(), b.weight.abs()));
+                edge.marked.set(true);
+                let mut new_cost = edge.weight;
+                if let Some(a) = a {
+                    a.marked.set(true);
+                    new_cost = min(new_cost, a.weight.abs());
+                }
+                if let Some(b) = b {
+                    b.marked.set(true);
+                    new_cost = min(new_cost, b.weight.abs());
+                }
+
+                cost += new_cost;
                 break;
             }
         }

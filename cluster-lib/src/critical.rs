@@ -11,12 +11,7 @@ pub fn critical(graph: &mut Graph) -> u32 {
             if edge.to > vertex {
                 break;
             }
-            if graph
-                .merge_edges(vertex, edge.to)
-                .conflicts()
-                .next()
-                .is_none()
-            {
+            if graph.conflict_edges(vertex, edge.to).next().is_none() {
                 cost += graph.merge_cost(vertex, edge.to);
                 vertex = graph.merge(vertex, edge.to);
                 // same.push(edge.to);
