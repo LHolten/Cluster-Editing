@@ -9,12 +9,12 @@ impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: VertexIndex, v2: VertexIndex) -> VertexIndex {
         let mut edges = Vec::new();
-        let mut total_positive = 0;
+        // let mut total_positive = 0;
         for (a, b) in self.merge_edges(v1, v2) {
             let weight = a.weight + b.weight;
-            if weight > 0 {
-                total_positive += weight;
-            }
+            // if weight > 0 {
+            //     total_positive += weight;
+            // }
             edges.push(Edge {
                 weight,
                 to: a.to,
@@ -22,10 +22,10 @@ impl Graph {
                 marked: Default::default(),
             });
         }
-        edges = edges
-            .into_iter()
-            .filter(|e| e.weight > -total_positive)
-            .collect();
+        // edges = edges
+        //     .into_iter()
+        //     .filter(|e| e.weight > -total_positive)
+        //     .collect();
 
         let index = VertexIndex(self.vertices.len() as u32);
         for edge in &edges {
