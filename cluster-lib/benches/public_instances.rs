@@ -10,7 +10,7 @@ fn exact_track(c: &mut Criterion) {
     let mut group = c.benchmark_group("exact");
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(10);
-    for instance in (1..6).step_by(2) {
+    for instance in (1..=11).step_by(2) {
         let input = load(File::open(format!("../exact/exact{:03}.gr", instance)).unwrap()).unwrap();
         group.bench_with_input(BenchmarkId::from_parameter(instance), &input, |b, g| {
             b.iter_batched_ref(

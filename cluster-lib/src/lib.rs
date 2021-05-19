@@ -42,22 +42,38 @@ mod tests {
 
     #[test]
     fn lower_bound() {
-        let mut graph = load(File::open("../exact/exact007.gr").unwrap()).unwrap();
         let mut bounds = Vec::new();
-        loop {
-            graph.snapshot();
-            simplify(&mut graph, 120);
+        for instance in (1..200).step_by(2) {
+            let file_name = format!("../exact/exact{:03}.gr", instance);
+            let mut graph = load(File::open(file_name).unwrap()).unwrap();
             let lower = pack(&graph);
             let actual = search_graph(&mut graph, u32::MAX, &mut 0);
-            graph.rollback();
+            println!("{:.1}%", 100. * lower as f32 / actual as f32);
             bounds.push((lower, actual));
-            let percentage = bounds
-                .iter()
-                .map(|(l, a)| *l as f32 / *a as f32)
-                .sum::<f32>()
-                / bounds.len() as f32;
-            println!("{:.1}%", 100. * percentage)
         }
+        let percentage = bounds
+            .iter()
+            .map(|(l, a)| *l as f32 / *a as f32)
+            .sum::<f32>()
+            / bounds.len() as f32;
+        println!("{:.1}%", 100. * percentage)
+
+        // let mut graph = load(File::open("../exact/exact007.gr").unwrap()).unwrap();
+        // let mut bounds = Vec::new();
+        // loop {
+        //     graph.snapshot();
+        //     simplify(&mut graph, 120);
+        //     let lower = pack(&graph);
+        //     let actual = search_graph(&mut graph, u32::MAX, &mut 0);
+        //     graph.rollback();
+        //     bounds.push((lower, actual));
+        //     let percentage = bounds
+        //         .iter()
+        //         .map(|(l, a)| *l as f32 / *a as f32)
+        //         .sum::<f32>()
+        //         / bounds.len() as f32;
+        //     println!("{:.1}%", 100. * percentage)
+        // }
     }
 
     #[test]
