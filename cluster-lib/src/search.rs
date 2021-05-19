@@ -38,7 +38,6 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32
 
         search_graph(graph, upper - cost, count) + cost
     } else {
-        // println!("improved by: {}", upper);
         0
     }
 }

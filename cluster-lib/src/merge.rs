@@ -50,15 +50,17 @@ impl Graph {
         v1: VertexIndex,
         v2: VertexIndex,
     ) -> impl '_ + Iterator<Item = (Option<&'_ Edge>, Option<&'_ Edge>)> {
+        let (mut a, mut b) = (self.edges(v1), self.edges(v2));
         AllEdges {
-            a: self.edges(v1).peekable(),
-            b: self.edges(v2).peekable(),
+            a_next: a.next(),
+            b_next: b.next(),
+            a,
+            b,
         }
-        .filter(|(a, b)| {
-            a.map(|e| e.weight > 0).unwrap_or(false) ^ b.map(|e| e.weight > 0).unwrap_or(false)
-        })
         .filter(move |(a, b)| {
-            a.map(|e| e.to != v2).unwrap_or(true) && b.map(|e| e.to != v1).unwrap_or(true)
+            (a.map(|e| e.weight > 0).unwrap_or(false) ^ b.map(|e| e.weight > 0).unwrap_or(false))
+                && a.map(|e| e.to != v2).unwrap_or(true)
+                && b.map(|e| e.to != v1).unwrap_or(true)
         })
     }
 
@@ -121,22 +123,43 @@ impl<'a> MergeEdges<'a> {
 }
 
 pub struct AllEdges<'a> {
-    a: Peekable<EdgeIter<'a>>,
-    b: Peekable<EdgeIter<'a>>,
+    a: EdgeIter<'a>,
+    a_next: Option<&'a Edge>,
+    b: EdgeIter<'a>,
+    b_next: Option<&'a Edge>,
 }
 
 impl<'a> Iterator for AllEdges<'a> {
     type Item = (Option<&'a Edge>, Option<&'a Edge>);
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        match (self.a.peek(), self.b.peek()) {
+        match (self.a_next.take(), self.b_next.take()) {
             (None, None) => None,
-            (None, Some(_)) => Some((None, self.b.next())),
-            (Some(_), None) => Some((self.a.next(), None)),
+            (None, Some(b)) => {
+                self.b_next = self.b.next();
+                Some((None, Some(b)))
+            }
+            (Some(a), None) => {
+                self.a_next = self.a.next();
+                Some((Some(a), None))
+            }
             (Some(a), Some(b)) => match a.to.cmp(&b.to) {
-                cmp::Ordering::Equal => Some((self.a.next(), self.b.next())),
-                cmp::Ordering::Less => Some((self.a.next(), None)),
-                cmp::Ordering::Greater => Some((None, self.b.next())),
+                cmp::Ordering::Equal => {
+                    self.a_next = self.a.next();
+                    self.b_next = self.b.next();
+                    Some((Some(a), Some(b)))
+                }
+                cmp::Ordering::Less => {
+                    self.a_next = self.a.next();
+                    self.b_next = Some(b);
+                    Some((Some(a), None))
+                }
+                cmp::Ordering::Greater => {
+                    self.a_next = Some(a);
+                    self.b_next = self.b.next();
+                    Some((None, Some(b)))
+                }
             },
         }
     }
