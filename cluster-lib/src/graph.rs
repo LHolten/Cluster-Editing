@@ -14,7 +14,6 @@ pub struct Graph {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vertex {
     pub merged: Option<VertexIndex>,
-    pub size: u32,
     pub edges: Vec<Edge>,
 }
 
@@ -22,7 +21,6 @@ impl Default for Vertex {
     fn default() -> Self {
         Self {
             merged: None,
-            size: 1,
             edges: Vec::new(),
         }
     }
