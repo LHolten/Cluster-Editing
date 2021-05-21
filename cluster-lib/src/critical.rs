@@ -8,7 +8,7 @@ pub fn critical(graph: &mut Graph) -> u32 {
         }
         // let mut same = Vec::new();
         for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
-            if edge.to > vertex {
+            if edge.to >= vertex {
                 break;
             }
             if graph.conflict_edges(vertex, edge.to).next().is_none() {
@@ -27,22 +27,20 @@ pub fn critical(graph: &mut Graph) -> u32 {
     cost
 }
 
-pub fn propagate(graph: &mut Graph, upper: u32) -> u32 {
-    let mut cost = 0;
+pub fn propagate(graph: &mut Graph) {
     for vertex in graph.clusters().collect::<Vec<_>>() {
-        for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
-            if edge.to > vertex {
+        for edge in graph.edges(vertex).negative().cloned().collect::<Vec<_>>() {
+            if edge.to >= vertex {
                 break;
             }
-            let cost2 = graph.merge_cost(vertex, edge.to);
 
-            if cost + cost2 >= upper {
-                cost += graph.cut(vertex, edge.to);
-                if cost >= upper {
-                    return upper;
-                }
+            if graph.merge_edges(vertex, edge.to).count() <= 1 {
+                graph.cut(vertex, edge.to);
             }
+
+            // if -edge.weight as u32 >= graph.cut_cost(vertex, edge.to) {
+            //     graph.cut(vertex, edge.to);
+            // }
         }
     }
-    cost
 }

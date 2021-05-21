@@ -13,6 +13,7 @@ mod tests {
     use std::fs::File;
 
     use crate::{
+        critical::critical,
         disk::{load, write},
         packing::pack,
         search::{search_graph, search_graph_2},
@@ -46,6 +47,7 @@ mod tests {
         for instance in (1..200).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            // critical(&mut graph);
             let lower = pack(&graph);
             let actual = search_graph(&mut graph, u32::MAX, &mut 0);
             println!("{:.1}%", 100. * lower as f32 / actual as f32);
@@ -78,13 +80,21 @@ mod tests {
 
     #[test]
     fn edge_count() {
-        let graph = load(File::open("../exact/exact007.gr").unwrap()).unwrap();
+        let graph = load(File::open("../exact/exact011.gr").unwrap()).unwrap();
         let mut edge_count = Vec::new();
+        let mut positive_count = Vec::new();
         for vertex in graph.clusters() {
-            edge_count.push(graph.edges(vertex).count())
+            edge_count.push(graph.edges(vertex).count());
+            positive_count.push(graph.edges(vertex).positive().count());
         }
         let count = edge_count.iter().sum::<usize>() / edge_count.len();
-        println!("edge count: {}, vertices: {}", count, edge_count.len() - 1)
+        let positive = positive_count.iter().sum::<usize>() / edge_count.len();
+        println!(
+            "edge count: {}, positive: {}, vertices: {}",
+            count,
+            positive,
+            edge_count.len() - 1
+        )
     }
 
     #[test]

@@ -57,15 +57,24 @@ impl Graph {
                     }
                     let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
                     if let Err(pos) = pos {
-                        self[vertex].edges.insert(
-                            pos,
-                            Edge {
-                                weight: -1,
-                                to: edge2.to,
-                                version: u32::MAX,
-                                marked: Default::default(),
-                            },
-                        );
+                        for (a, _) in self
+                            .merge_edges(vertex, edge2.to)
+                            .two_edges()
+                            .collect::<Vec<_>>()
+                        {
+                            if a.to != edge.to {
+                                self[vertex].edges.insert(
+                                    pos,
+                                    Edge {
+                                        weight: -1,
+                                        to: edge2.to,
+                                        version: u32::MAX,
+                                        marked: Default::default(),
+                                    },
+                                );
+                                break;
+                            }
+                        }
                     }
                 }
             }

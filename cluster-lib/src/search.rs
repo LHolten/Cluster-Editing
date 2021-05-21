@@ -1,9 +1,11 @@
 use std::thread::spawn;
 
-use crate::{graph::Graph, packing::pack};
+use crate::{critical::propagate, graph::Graph, packing::pack};
 
 pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize) -> u32 {
     *count += 1;
+    // propagate(graph);
+
     let lower = pack(graph);
     if lower >= upper {
         return upper;
