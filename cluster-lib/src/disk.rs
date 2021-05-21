@@ -57,11 +57,10 @@ impl Graph {
                     }
                     let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
                     if let Err(pos) = pos {
-                        let weight = -((self[vertex].size * self[edge2.to].size) as i32);
                         self[vertex].edges.insert(
                             pos,
                             Edge {
-                                weight,
+                                weight: -1,
                                 to: edge2.to,
                                 version: u32::MAX,
                                 marked: Default::default(),

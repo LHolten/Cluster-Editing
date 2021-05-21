@@ -39,7 +39,6 @@ impl Graph {
 
         self.vertices.push(Vertex {
             merged: None,
-            size: self[v1].size + self[v2].size,
             edges,
         });
         self[v1].merged = Some(index);
