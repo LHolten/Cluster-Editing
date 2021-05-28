@@ -92,25 +92,6 @@ impl Graph {
         cost as u32
     }
 
-    pub fn similarity(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
-        let mut d1 = 0;
-        let mut d2 = 0;
-        for (e1, e2) in self.conflict_edges(v1, v2) {
-            if let Some(e1) = e1 {
-                d1 += e1.weight.abs();
-            } else {
-                return u32::MAX;
-            }
-            if let Some(e2) = e2 {
-                d2 += e2.weight.abs();
-            } else {
-                return u32::MAX;
-            }
-        }
-        for (e1, e2) in self.merge_edges(v1, v2).two_edges() {}
-        0
-    }
-
     // pub fn merge_rho(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
     //     self.merge_edges(v1, v2)
     //         .conflicts()

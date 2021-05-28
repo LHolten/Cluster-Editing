@@ -1,7 +1,7 @@
 mod branch;
 mod critical;
 pub mod disk;
-mod graph;
+pub mod graph;
 pub mod kernel;
 mod merge;
 mod packing;
@@ -10,13 +10,13 @@ mod simplify;
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    use std::{fs::File, process::Command};
 
     use crate::{
-        critical::critical,
-        disk::{load, write},
+        disk::{load, write_solution},
+        graph::Graph,
         packing::pack,
-        search::{search_graph, search_graph_2},
+        search::search_graph,
         simplify::simplify,
     };
 
@@ -24,9 +24,26 @@ mod tests {
     fn test() {
         for instance in (1..50).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
-            let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            println!("{}", search_graph(&mut graph, u32::MAX, &mut 0));
+            let mut output = Graph::new(0);
+            graph.snapshot();
+            println!(
+                "{}",
+                search_graph(&mut graph, u32::MAX, &mut 0, &mut output)
+            );
+            graph.rollback();
+            let out_file = format!("../exact/solution{:03}.s", instance);
+            write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+
+            assert_eq!(
+                Command::new("../verifier/verifier.exe")
+                    .args(&[file_name, out_file])
+                    .output()
+                    .unwrap()
+                    .stdout,
+                "OK\r\n".bytes().collect::<Vec<_>>()
+            )
         }
     }
 
@@ -36,7 +53,7 @@ mod tests {
         loop {
             graph.snapshot();
             simplify(&mut graph, 40);
-            search_graph_2(&mut graph, u32::MAX, &mut 0);
+            search_graph(&mut graph, u32::MAX, &mut 0, &mut Graph::new(0));
             graph.rollback();
         }
     }
@@ -49,7 +66,7 @@ mod tests {
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let lower = pack(&graph);
-            let actual = search_graph(&mut graph, u32::MAX, &mut 0);
+            let actual = search_graph(&mut graph, u32::MAX, &mut 0, &mut Graph::new(0));
             println!("{:.1}%", 100. * lower as f32 / actual as f32);
             bounds.push((lower, actual));
         }
@@ -95,60 +112,6 @@ mod tests {
             positive,
             edge_count.len() - 1
         )
-    }
-
-    #[test]
-    fn num_visited() {
-        let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
-        let tests = vec![
-            (10, 1000),
-            (15, 1000),
-            (20, 1000),
-            (25, 200),
-            (30, 100),
-            (35, 50),
-            (40, 10),
-        ];
-        for (num_edges, times) in tests {
-            let mut results1 = Vec::new();
-            let mut results2 = Vec::new();
-            for _ in 0..times {
-                graph.snapshot();
-                simplify(&mut graph, num_edges);
-
-                graph.snapshot();
-                let k = search_graph(&mut graph, u32::MAX, &mut 0);
-                graph.rollback();
-
-                graph.snapshot();
-                let mut count1 = 0;
-                let k1 = search_graph(&mut graph, k, &mut count1);
-                results1.push(count1);
-                graph.rollback();
-
-                graph.snapshot();
-                let mut count2 = 0;
-                let k2 = search_graph_2(&mut graph, k, &mut count2);
-                results2.push(count2);
-                graph.rollback();
-
-                if k1 != k2 {
-                    write(&mut graph, File::create("test.gr").unwrap()).unwrap();
-                }
-                assert_eq!(k1, k2);
-                graph.rollback();
-            }
-            println!(
-                "1 had avg {} on {}",
-                results1.iter().sum::<usize>() / results1.len(),
-                num_edges
-            );
-            println!(
-                "2 had avg {} on {}",
-                results2.iter().sum::<usize>() / results2.len(),
-                num_edges
-            );
-        }
     }
 
     // #[test]

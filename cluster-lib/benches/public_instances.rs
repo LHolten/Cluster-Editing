@@ -1,4 +1,4 @@
-use cluster_lib::{disk::load, search::search_graph};
+use cluster_lib::{disk::load, graph::Graph, search::search_graph};
 use criterion::{criterion_group, criterion_main, SamplingMode};
 
 use std::fs::File;
@@ -15,7 +15,7 @@ fn exact_track(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(instance), &input, |b, g| {
             b.iter_batched_ref(
                 || g.clone(),
-                |g| search_graph(g, u32::MAX, &mut 0),
+                |g| search_graph(g, u32::MAX, &mut 0, &mut Graph::new(0)),
                 criterion::BatchSize::LargeInput,
             );
         });

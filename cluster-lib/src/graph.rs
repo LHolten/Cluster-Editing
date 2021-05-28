@@ -106,6 +106,14 @@ impl Graph {
             edges: self[index].edges.iter(),
         }
     }
+
+    pub fn root(&self, index: VertexIndex) -> VertexIndex {
+        if let Some(new_index) = self[index].merged {
+            self.root(new_index)
+        } else {
+            index
+        }
+    }
 }
 
 impl Index<VertexIndex> for Graph {

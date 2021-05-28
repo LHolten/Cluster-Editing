@@ -148,3 +148,28 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
 
     Ok(())
 }
+
+pub fn write_solution(input: &Graph, output: &mut Graph, file: File) -> io::Result<()> {
+    for mut vertex in output.clusters().collect::<Vec<_>>() {
+        if output[vertex].merged.is_some() {
+            continue;
+        }
+        for edge in output.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+            vertex = output.merge(vertex, edge.to);
+        }
+    }
+    let mut writer = BufWriter::new(file);
+
+    for vertex in input.clusters() {
+        for edge in input.edges(vertex) {
+            if edge.to > vertex {
+                break;
+            }
+
+            if (edge.weight > 0) != (output.root(vertex) == output.root(edge.to)) {
+                writeln!(&mut writer, "{} {}", vertex.0 + 1, edge.to.0 + 1)?
+            }
+        }
+    }
+    Ok(())
+}
