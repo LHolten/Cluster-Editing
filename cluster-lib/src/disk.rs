@@ -1,11 +1,11 @@
 use std::{
     fs::File,
-    io::{self, BufRead, BufReader, BufWriter, Write},
+    io::{self, BufRead, BufReader, BufWriter, Read, Write},
 };
 
 use crate::graph::{Edge, Graph, VertexIndex};
 
-pub fn load(file: File) -> io::Result<Graph> {
+pub fn load<F: Read>(file: F) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
     let v = loop {
         let mut line = String::new();
@@ -149,7 +149,7 @@ pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
     Ok(())
 }
 
-pub fn write_solution(input: &Graph, output: &mut Graph, file: File) -> io::Result<()> {
+pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
     for mut vertex in output.clusters().collect::<Vec<_>>() {
         if output[vertex].merged.is_some() {
             continue;
