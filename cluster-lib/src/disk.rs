@@ -50,8 +50,8 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
 impl Graph {
     fn add_indirect_edges(&mut self) {
         for vertex in self.clusters().collect::<Vec<_>>() {
-            for edge in self.edges(vertex).positive().cloned().collect::<Vec<_>>() {
-                for edge2 in self.edges(edge.to).positive().cloned().collect::<Vec<_>>() {
+            for edge in self.edges(vertex).positive().copied().collect::<Vec<_>>() {
+                for edge2 in self.edges(edge.to).positive().copied().collect::<Vec<_>>() {
                     if edge2.to == vertex {
                         continue;
                     }
@@ -69,7 +69,6 @@ impl Graph {
                                         weight: -1,
                                         to: edge2.to,
                                         version: u32::MAX,
-                                        marked: Default::default(),
                                     },
                                 );
                                 break;
@@ -154,7 +153,7 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
         if output[vertex].merged.is_some() {
             continue;
         }
-        for edge in output.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+        for edge in output.edges(vertex).positive().copied().collect::<Vec<_>>() {
             vertex = output.merge(vertex, edge.to);
         }
     }

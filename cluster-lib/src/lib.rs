@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn test() {
-        for instance in (1..50).step_by(2) {
+        for instance in (25..50).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);

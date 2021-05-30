@@ -9,7 +9,7 @@
 //             // also possible to merge only with vertices before
 //             continue;
 //         }
-//         let inner = graph.edges(vertex).positive().cloned().collect::<Vec<_>>();
+//         let inner = graph.edges(vertex).positive().copied().collect::<Vec<_>>();
 //         let mut rho = 0;
 //         for edge in &inner {
 //             rho += graph.merge_rho(vertex, edge.to)
@@ -30,7 +30,7 @@
 //     loop {
 //         let mut new_cost = 0;
 //         for vertex in graph.clusters().collect::<Vec<_>>() {
-//             for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+//             for edge in graph.edges(vertex).positive().copied().collect::<Vec<_>>() {
 //                 let mut v1 = vertex;
 //                 let mut v2 = edge.to;
 //                 let conflicts = graph.merge_edges(v1, v2).conflicts().collect::<Vec<_>>();

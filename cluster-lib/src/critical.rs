@@ -6,7 +6,7 @@ pub fn critical(graph: &mut Graph) {
             continue;
         }
         // let mut same = Vec::new();
-        for edge in graph.edges(vertex).positive().cloned().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).positive().copied().collect::<Vec<_>>() {
             if graph.conflict_edges(vertex, edge.to).next().is_none() {
                 vertex = graph.merge(vertex, edge.to);
                 // same.push(edge.to);
@@ -23,7 +23,7 @@ pub fn critical(graph: &mut Graph) {
 
 pub fn propagate(graph: &mut Graph) {
     for vertex in graph.clusters().collect::<Vec<_>>() {
-        for edge in graph.edges(vertex).negative().cloned().collect::<Vec<_>>() {
+        for edge in graph.edges(vertex).negative().copied().collect::<Vec<_>>() {
             if edge.to >= vertex {
                 break;
             }

@@ -22,7 +22,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize, best: 
             return upper;
         }
 
-        for edge in graph.edges(v3).positive().cloned().collect::<Vec<_>>() {
+        for edge in graph.edges(v3).positive().copied().collect::<Vec<_>>() {
             graph.snapshot();
             let cost2 = graph.merge_cost(v3, edge.to);
             if cost + cost2 < upper {

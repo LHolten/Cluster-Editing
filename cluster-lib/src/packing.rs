@@ -4,9 +4,7 @@ use crate::graph::Graph;
 
 pub fn pack(graph: &Graph) -> u32 {
     for vertex in &graph.vertices {
-        for edge in &vertex.edges {
-            edge.marked.set(false);
-        }
+        vertex.marked.set(false)
     }
 
     let mut cost = 0;
@@ -15,29 +13,33 @@ pub fn pack(graph: &Graph) -> u32 {
             if edge.to >= vertex {
                 break;
             }
-            if edge.marked.get() {
+            let (a_marked, b_marked) = (graph[vertex].marked.get(), graph[edge.to].marked.get());
+            if a_marked && b_marked {
                 continue;
             }
 
             for (a, b) in graph.conflict_edges(vertex, edge.to) {
-                if a.or(b).unwrap().to >= vertex {
+                let edge2_to = a.or(b).unwrap().to;
+                if edge2_to >= vertex {
                     break;
                 }
-                if a.map(|e| e.to >= edge.to).unwrap_or(false)
-                    || a.map(|e| e.marked.get()).unwrap_or(false)
-                    || b.map(|e| e.marked.get()).unwrap_or(false)
+                let c_marked = graph[edge2_to].marked.get();
+
+                if a.is_some() && edge2_to >= edge.to
+                    || a_marked && a.is_some() && c_marked
+                    || b_marked && b.is_some() && c_marked
                 {
                     continue;
                 }
 
-                edge.marked.set(true);
+                graph[vertex].marked.set(true);
+                graph[edge.to].marked.set(true);
+                graph[edge2_to].marked.set(true);
                 let mut new_cost = edge.weight;
                 if let Some(a) = a {
-                    a.marked.set(true);
                     new_cost = min(new_cost, a.weight.abs());
                 }
                 if let Some(b) = b {
-                    b.marked.set(true);
                     new_cost = min(new_cost, b.weight.abs());
                 }
 

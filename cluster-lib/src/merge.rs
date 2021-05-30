@@ -19,7 +19,6 @@ impl Graph {
                 weight,
                 to: a.to,
                 version: min(a.version, b.version),
-                marked: Default::default(),
             });
         }
         edges.retain(|e| e.weight > -total_positive);
@@ -30,13 +29,13 @@ impl Graph {
                 weight: edge.weight,
                 to: index,
                 version: edge.version,
-                marked: Default::default(),
             })
         }
 
         self.vertices.push(Vertex {
             merged: None,
             edges,
+            marked: Default::default(),
         });
         self[v1].merged = Some(index);
         self[v2].merged = Some(index);

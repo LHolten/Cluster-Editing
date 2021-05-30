@@ -15,6 +15,7 @@ pub struct Graph {
 pub struct Vertex {
     pub merged: Option<VertexIndex>,
     pub edges: Vec<Edge>,
+    pub marked: Cell<bool>,
 }
 
 impl Default for Vertex {
@@ -22,16 +23,16 @@ impl Default for Vertex {
         Self {
             merged: None,
             edges: Vec::new(),
+            marked: Default::default(),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
     pub to: VertexIndex,
     pub version: u32,
-    pub marked: Cell<bool>,
 }
 
 impl Edge {
@@ -40,7 +41,6 @@ impl Edge {
             weight: 1,
             to,
             version: u32::MAX,
-            marked: Default::default(),
         }
     }
 }

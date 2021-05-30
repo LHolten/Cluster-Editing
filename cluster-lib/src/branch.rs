@@ -39,7 +39,7 @@ impl Graph {
                 if edge.to >= vertex {
                     break;
                 }
-                let mut edge = edge.clone();
+                let mut edge = *edge;
                 if edge.version != u32::MAX {
                     edge.weight = -i32::MAX
                 }
