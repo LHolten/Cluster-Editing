@@ -10,9 +10,7 @@ extern crate cluster_lib;
 
 fn main() {
     let mut graph = load(stdin()).unwrap();
-    graph.snapshot();
-    let mut best = Graph::new(0);
-    search_graph(&mut graph, u32::MAX, &mut 0, &mut best);
-    graph.rollback();
+    let mut best = Graph::new(1);
+    search_graph(&mut graph, i32::MAX, &mut best);
     write_solution(&graph, &mut best, stdout()).unwrap()
 }
