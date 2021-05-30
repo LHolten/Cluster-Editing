@@ -158,13 +158,14 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     let mut writer = BufWriter::new(file);
 
     for vertex in input.clusters() {
-        for edge in input.edges(vertex) {
-            if edge.to > vertex {
+        for vertex2 in input.clusters() {
+            if vertex2 >= vertex {
                 break;
             }
 
-            if (edge.weight > 0) != (output.root(vertex) == output.root(edge.to)) {
-                writeln!(&mut writer, "{} {}", vertex.0 + 1, edge.to.0 + 1)?
+            let edge = input.edges(vertex).positive().any(|e| e.to == vertex2);
+            if edge != (output.root(vertex) == output.root(vertex2)) {
+                writeln!(&mut writer, "{} {}", vertex.0 + 1, vertex2.0 + 1)?
             }
         }
     }
