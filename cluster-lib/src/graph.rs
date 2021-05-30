@@ -13,6 +13,7 @@ pub struct Graph {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vertex {
+    pub size: i32,
     pub merged: Option<VertexIndex>,
     pub edges: Vec<Edge>,
     pub marked: Cell<bool>,
@@ -21,6 +22,7 @@ pub struct Vertex {
 impl Default for Vertex {
     fn default() -> Self {
         Self {
+            size: 1,
             merged: None,
             edges: Vec::new(),
             marked: Default::default(),

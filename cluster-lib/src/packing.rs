@@ -24,9 +24,9 @@ pub fn pack(graph: &Graph) -> u32 {
                 }
                 let c_marked = graph[pair.to].marked.get();
 
-                if pair.a_weight.is_some() && pair.to >= edge.to
-                    || a_marked && pair.a_weight.is_some() && c_marked
-                    || b_marked && pair.b_weight.is_some() && c_marked
+                if pair.a_weight > 0 && pair.to >= edge.to
+                    || a_marked && pair.a_version == u32::MAX && c_marked
+                    || b_marked && pair.b_version == u32::MAX && c_marked
                 {
                     continue;
                 }
@@ -34,15 +34,7 @@ pub fn pack(graph: &Graph) -> u32 {
                 graph[vertex].marked.set(true);
                 graph[edge.to].marked.set(true);
                 graph[pair.to].marked.set(true);
-                let mut new_cost = edge.weight;
-                if let Some(a_weight) = pair.a_weight {
-                    new_cost = min(new_cost, a_weight.abs());
-                }
-                if let Some(b_weight) = pair.b_weight {
-                    new_cost = min(new_cost, b_weight.abs());
-                }
-
-                cost += new_cost;
+                cost += min(min(edge.weight, pair.a_weight.abs()), pair.b_weight.abs());
                 break;
             }
         }
