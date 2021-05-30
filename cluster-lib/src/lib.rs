@@ -14,7 +14,12 @@ mod simplify;
 mod tests {
     use std::{fs::File, process::Command};
 
-    use crate::{disk::load, graph::Graph, packing::pack, search::search_graph};
+    use crate::{
+        disk::{load, write_solution},
+        graph::Graph,
+        packing::pack,
+        search::search_graph,
+    };
 
     #[test]
     fn test() {
@@ -28,16 +33,16 @@ mod tests {
                 search_graph(&mut graph, i32::MAX, &mut 0, &mut output)
             );
             let out_file = format!("../exact/solution{:03}.s", instance);
-            // write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
 
-            // assert_eq!(
-            //     Command::new("../verifier/verifier.exe")
-            //         .args(&[file_name, out_file])
-            //         .output()
-            //         .unwrap()
-            //         .stdout,
-            //     "OK\r\n".bytes().collect::<Vec<_>>()
-            // )
+            assert_eq!(
+                Command::new("../verifier/verifier.exe")
+                    .args(&[file_name, out_file])
+                    .output()
+                    .unwrap()
+                    .stdout,
+                "OK\r\n".bytes().collect::<Vec<_>>()
+            )
         }
     }
 

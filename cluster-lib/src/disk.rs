@@ -143,28 +143,28 @@ impl Graph {
 //     Ok(())
 // }
 
-// pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
-//     for mut vertex in output.clusters().collect::<Vec<_>>() {
-//         if output[vertex].merged.is_some() {
-//             continue;
-//         }
-//         for edge in output.edges(vertex).positive().copied().collect::<Vec<_>>() {
-//             vertex = output.merge(vertex, edge.to);
-//         }
-//     }
-//     let mut writer = BufWriter::new(file);
+pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
+    for mut vertex in output.clusters.iter().collect::<Vec<_>>() {
+        if output[vertex].merged.is_some() {
+            continue;
+        }
+        for vertex2 in output.positive(vertex).collect::<Vec<_>>() {
+            vertex = output.merge(vertex, vertex2).0;
+        }
+    }
+    let mut writer = BufWriter::new(file);
 
-//     for vertex in input.clusters() {
-//         for vertex2 in input.clusters() {
-//             if vertex2 >= vertex {
-//                 break;
-//             }
+    for vertex1 in input.clusters.iter() {
+        for vertex2 in input.clusters.iter() {
+            if vertex2 >= vertex1 {
+                break;
+            }
 
-//             let edge = input.edges(vertex).positive().any(|e| e.to == vertex2);
-//             if edge != (output.root(vertex) == output.root(vertex2)) {
-//                 writeln!(&mut writer, "{} {}", vertex.0 + 1, vertex2.0 + 1)?
-//             }
-//         }
-//     }
-//     Ok(())
-// }
+            let edge = input[vertex1][vertex2].weight > 0;
+            if edge != (output.root(vertex1) == output.root(vertex2)) {
+                writeln!(&mut writer, "{} {}", vertex1 + 1, vertex2 + 1)?
+            }
+        }
+    }
+    Ok(())
+}
