@@ -1,26 +1,37 @@
-use std::{
-    cmp::{self, min},
-    mem::replace,
-    slice::Iter,
-};
+use std::cmp::min;
 
-use crate::graph::{Edge, Graph, Vertex, VertexIndex};
+use crate::graph::{Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
-    pub fn merge(&mut self, v1: VertexIndex, v2: VertexIndex) -> VertexIndex {
-        let mut edges = Vec::new();
-        let mut total_positive = 0;
+    pub fn merge(&mut self, v1: usize, v2: usize) -> (usize, i32) {
+        let index = self.clusters.iter().last().unwrap() + 1;
+        self.clusters.remove(v1);
+        self.clusters.remove(v2);
+
+        let mut cost = 0;
+        let graph = self as *mut Graph;
+
+        // let mut total_positive = 0;
         for pair in self.all_edges(v1, v2) {
-            let weight = pair.a_weight + pair.b_weight;
-            if weight > 0 {
-                total_positive += weight;
+            if (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0) {
+                cost += min(pair.edge1.weight.abs(), pair.edge2.weight.abs());
             }
-            edges.push(Edge {
-                weight,
-                to: pair.to,
-                version: min(pair.a_version, pair.b_version),
-            });
+            let edge = if (pair.edge1.deleted) || (pair.edge2.deleted) {
+                Edge::none()
+            } else {
+                Edge {
+                    weight: pair.edge1.weight + pair.edge2.weight,
+                    deleted: pair.edge1.deleted || pair.edge2.deleted,
+                }
+            };
+            // if weight > 0 {
+            //     total_positive += weight;
+            // }
+            unsafe {
+                (&mut *graph)[index][pair.to] = edge;
+                (&mut *graph)[pair.to][index] = edge;
+            }
         }
         // for edge in &mut edges {
         //     if edge.weight <= -total_positive {
@@ -28,111 +39,53 @@ impl Graph {
         //     }
         // }
 
-        let index = VertexIndex(self.vertices.len() as u32);
-        for edge in &edges {
-            self[edge.to].edges.push(Edge {
-                weight: edge.weight,
-                to: index,
-                version: edge.version,
-            })
-        }
-
-        self.vertices.push(Vertex {
-            size: self[v1].size + self[v2].size,
-            merged: None,
-            edges,
-            marked: Default::default(),
-        });
+        self.clusters.insert(index);
         self[v1].merged = Some(index);
         self[v2].merged = Some(index);
-        index
+        (index, cost)
     }
 
-    pub fn all_edges(
-        &self,
-        v1: VertexIndex,
-        v2: VertexIndex,
-    ) -> impl '_ + Iterator<Item = EdgePair> {
-        let (mut a, mut b) = (self[v1].edges.iter(), self[v2].edges.iter());
+    pub fn un_merge(&mut self, v1: usize, v2: usize, index: usize) {
+        self[v1].merged = None;
+        self[v2].merged = None;
+
+        self.clusters.remove(index);
+        self.clusters.insert(v1);
+        self.clusters.insert(v2);
+    }
+
+    pub fn all_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
         AllEdges {
-            graph: self,
-            a_index: v1,
-            a_size: self[v1].size,
-            a_next: a.next().unwrap_or(NO_EDGE),
-            a,
-            b_index: v2,
-            b_size: self[v2].size,
-            b_next: b.next().unwrap_or(NO_EDGE),
-            b,
+            vertex1: &self[v1],
+            vertex2: &self[v2],
+            clusters: self.clusters.iter(),
         }
     }
 
-    pub fn conflict_edges(
-        &self,
-        v1: VertexIndex,
-        v2: VertexIndex,
-    ) -> impl '_ + Iterator<Item = EdgePair> {
+    pub fn conflict_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
         self.all_edges(v1, v2)
-            .filter(move |pair| (pair.a_weight > 0) ^ (pair.b_weight > 0))
+            .filter(move |pair| (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0))
     }
 
-    pub fn merge_cost(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
-        let mut cost = 0;
-        for pair in self.conflict_edges(v1, v2) {
-            cost += min(pair.a_weight.abs(), pair.b_weight.abs());
-        }
-        cost as u32
-    }
+    // pub fn merge_cost(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
+    //     let mut cost = 0;
+    //     for pair in self.conflict_edges(v1, v2) {
+    //         cost += min(pair.edge1.weight.abs(), pair.edge2.weight.abs());
+    //     }
+    //     cost as u32
+    // }
 }
 
-const NO_EDGE: &Edge = &Edge {
-    weight: 1,
-    to: VertexIndex(u32::MAX),
-    version: u32::MAX,
-};
-
 pub struct AllEdges<'a> {
-    graph: &'a Graph,
-    a_index: VertexIndex,
-    a_size: i32,
-    a_next: &'a Edge,
-    a: Iter<'a, Edge>,
-    b_index: VertexIndex,
-    b_size: i32,
-    b_next: &'a Edge,
-    b: Iter<'a, Edge>,
+    vertex1: &'a Vertex,
+    vertex2: &'a Vertex,
+    clusters: bit_set::Iter<'a, u32>,
 }
 
 pub struct EdgePair {
-    pub to: VertexIndex,
-    pub a_weight: i32,
-    pub a_version: u32,
-    pub b_weight: i32,
-    pub b_version: u32,
-}
-
-impl<'a> AllEdges<'a> {
-    pub fn edge_pair(&self, a: Option<&Edge>, b: Option<&Edge>) -> Option<EdgePair> {
-        if a.map_or(false, |e| e.to == self.b_index) || b.map_or(false, |e| e.to == self.a_index) {
-            return None;
-        }
-        let to = a.or(b).unwrap().to;
-        let c = &self.graph[to];
-        if c.merged.is_some() {
-            return None;
-        }
-        Some(EdgePair {
-            to,
-            a_weight: a
-                .filter(|e| e.version == u32::MAX)
-                .map_or(-self.a_size * c.size, |e| e.weight),
-            a_version: a.map_or(u32::MAX, |e| e.version),
-            b_weight: b
-                .filter(|e| e.version == u32::MAX)
-                .map_or(-self.b_size * c.size, |e| e.weight),
-            b_version: b.map_or(u32::MAX, |e| e.version),
-        })
-    }
+    pub to: usize,
+    pub edge1: Edge,
+    pub edge2: Edge,
 }
 
 impl<'a> Iterator for AllEdges<'a> {
@@ -140,31 +93,11 @@ impl<'a> Iterator for AllEdges<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match self.a_next.to.cmp(&self.b_next.to) {
-                cmp::Ordering::Equal => {
-                    if self.a_next.to == NO_EDGE.to {
-                        return None;
-                    }
-                    let a = replace(&mut self.a_next, self.a.next().unwrap_or(NO_EDGE));
-                    let b = replace(&mut self.b_next, self.b.next().unwrap_or(NO_EDGE));
-                    if let Some(pair) = self.edge_pair(Some(a), Some(b)) {
-                        return Some(pair);
-                    };
-                }
-                cmp::Ordering::Less => {
-                    let a = replace(&mut self.a_next, self.a.next().unwrap_or(NO_EDGE));
-                    if let Some(pair) = self.edge_pair(Some(a), None) {
-                        return Some(pair);
-                    };
-                }
-                cmp::Ordering::Greater => {
-                    let b = replace(&mut self.b_next, self.b.next().unwrap_or(NO_EDGE));
-                    if let Some(pair) = self.edge_pair(None, Some(b)) {
-                        return Some(pair);
-                    };
-                }
-            }
-        }
+        let to = self.clusters.next()?;
+        Some(EdgePair {
+            to,
+            edge1: self.vertex1[to],
+            edge2: self.vertex2[to],
+        })
     }
 }

@@ -1,9 +1,10 @@
 use std::{
     fs::File,
     io::{self, BufRead, BufReader, BufWriter, Read, Write},
+    usize,
 };
 
-use crate::graph::{Edge, Graph, VertexIndex};
+use crate::graph::{Edge, Graph};
 
 pub fn load<F: Read>(file: F) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
@@ -15,7 +16,7 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
             Some("c") => continue,
             Some("p") => {
                 assert_eq!(words.next(), Some("cep"));
-                break words.next().unwrap().parse::<u32>().unwrap();
+                break words.next().unwrap().parse::<usize>().unwrap();
             }
             _ => return Err(io::ErrorKind::InvalidInput.into()),
         }
@@ -29,17 +30,13 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
         match words.next() {
             Some("c") => continue,
             Some(word) => {
-                let v1 = VertexIndex(word.parse::<u32>().unwrap() - 1);
-                let v2 = VertexIndex(words.next().unwrap().parse::<u32>().unwrap() - 1);
-                graph[v1].edges.push(Edge::new(v2));
-                graph[v2].edges.push(Edge::new(v1));
+                let v1 = word.parse::<usize>().unwrap() - 1;
+                let v2 = words.next().unwrap().parse::<usize>().unwrap() - 1;
+                graph[v1][v2].weight = 1;
+                graph[v2][v1].weight = 1;
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
-    }
-
-    for vertex in &mut graph.vertices {
-        vertex.edges.sort_by_key(|e| e.to)
     }
 
     Ok(graph)
@@ -78,96 +75,96 @@ impl Graph {
     //     }
     // }
 
-    fn vertex_size(&self, index: VertexIndex) -> u32 {
-        let edges = self.edges(index).positive().collect::<Vec<_>>();
-        if edges.is_empty() {
-            0
-        } else if edges.len() == 1 {
-            edges[0].weight as u32
-        } else {
-            1
-        }
-    }
+    // fn vertex_size(&self, index: VertexIndex) -> u32 {
+    //     let edges = self.edges(index).positive().collect::<Vec<_>>();
+    //     if edges.is_empty() {
+    //         0
+    //     } else if edges.len() == 1 {
+    //         edges[0].weight as u32
+    //     } else {
+    //         1
+    //     }
+    // }
 
-    fn size(&self) -> u32 {
-        self.clusters().map(|v| self.vertex_size(v)).sum()
-    }
+    // fn size(&self) -> u32 {
+    //     self.clusters().map(|v| self.vertex_size(v)).sum()
+    // }
 
-    fn edge_count(&self) -> u32 {
-        self.clusters()
-            .map(|v| self.edges(v).positive().map(|e| e.weight).sum::<i32>())
-            .sum::<i32>() as u32
-            / 2
-    }
+    // fn edge_count(&self) -> u32 {
+    //     self.clusters()
+    //         .map(|v| self.edges(v).positive().map(|e| e.weight).sum::<i32>())
+    //         .sum::<i32>() as u32
+    //         / 2
+    // }
 }
 
-pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
-    let mut writer = BufWriter::new(file);
-    writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
+// pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
+//     let mut writer = BufWriter::new(file);
+//     writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
 
-    let mut new_index = vec![1];
-    for vertex in 0..graph.vertices.len() as u32 {
-        let vertex = VertexIndex(vertex);
-        if graph[vertex].merged.is_some() {
-            new_index.push(*new_index.last().unwrap());
-            continue;
-        }
-        let size = graph.vertex_size(vertex);
-        new_index.push(new_index.last().unwrap() + size);
+//     let mut new_index = vec![1];
+//     for vertex in 0..graph.vertices.len() as u32 {
+//         let vertex = VertexIndex(vertex);
+//         if graph[vertex].merged.is_some() {
+//             new_index.push(*new_index.last().unwrap());
+//             continue;
+//         }
+//         let size = graph.vertex_size(vertex);
+//         new_index.push(new_index.last().unwrap() + size);
 
-        if size == 1 {
-            for edge in graph.edges(vertex).positive() {
-                if vertex < edge.to {
-                    break;
-                }
-                writeln!(
-                    &mut writer,
-                    "{} {}",
-                    new_index[vertex.0 as usize], new_index[edge.to.0 as usize]
-                )?
-            }
-        }
-        if size > 1 {
-            for from in new_index[vertex.0 as usize]..(new_index[vertex.0 as usize] + size) {
-                for from2 in new_index[vertex.0 as usize]..from {
-                    writeln!(&mut writer, "{} {}", from, from2)?
-                }
+//         if size == 1 {
+//             for edge in graph.edges(vertex).positive() {
+//                 if vertex < edge.to {
+//                     break;
+//                 }
+//                 writeln!(
+//                     &mut writer,
+//                     "{} {}",
+//                     new_index[vertex.0 as usize], new_index[edge.to.0 as usize]
+//                 )?
+//             }
+//         }
+//         if size > 1 {
+//             for from in new_index[vertex.0 as usize]..(new_index[vertex.0 as usize] + size) {
+//                 for from2 in new_index[vertex.0 as usize]..from {
+//                     writeln!(&mut writer, "{} {}", from, from2)?
+//                 }
 
-                for edge in graph.edges(vertex).positive() {
-                    if vertex < edge.to {
-                        break;
-                    }
-                    writeln!(&mut writer, "{} {}", from, new_index[edge.to.0 as usize])?
-                }
-            }
-        }
-    }
+//                 for edge in graph.edges(vertex).positive() {
+//                     if vertex < edge.to {
+//                         break;
+//                     }
+//                     writeln!(&mut writer, "{} {}", from, new_index[edge.to.0 as usize])?
+//                 }
+//             }
+//         }
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
-    for mut vertex in output.clusters().collect::<Vec<_>>() {
-        if output[vertex].merged.is_some() {
-            continue;
-        }
-        for edge in output.edges(vertex).positive().copied().collect::<Vec<_>>() {
-            vertex = output.merge(vertex, edge.to);
-        }
-    }
-    let mut writer = BufWriter::new(file);
+// pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
+//     for mut vertex in output.clusters().collect::<Vec<_>>() {
+//         if output[vertex].merged.is_some() {
+//             continue;
+//         }
+//         for edge in output.edges(vertex).positive().copied().collect::<Vec<_>>() {
+//             vertex = output.merge(vertex, edge.to);
+//         }
+//     }
+//     let mut writer = BufWriter::new(file);
 
-    for vertex in input.clusters() {
-        for vertex2 in input.clusters() {
-            if vertex2 >= vertex {
-                break;
-            }
+//     for vertex in input.clusters() {
+//         for vertex2 in input.clusters() {
+//             if vertex2 >= vertex {
+//                 break;
+//             }
 
-            let edge = input.edges(vertex).positive().any(|e| e.to == vertex2);
-            if edge != (output.root(vertex) == output.root(vertex2)) {
-                writeln!(&mut writer, "{} {}", vertex.0 + 1, vertex2.0 + 1)?
-            }
-        }
-    }
-    Ok(())
-}
+//             let edge = input.edges(vertex).positive().any(|e| e.to == vertex2);
+//             if edge != (output.root(vertex) == output.root(vertex2)) {
+//                 writeln!(&mut writer, "{} {}", vertex.0 + 1, vertex2.0 + 1)?
+//             }
+//         }
+//     }
+//     Ok(())
+// }

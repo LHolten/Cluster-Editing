@@ -1,6 +1,6 @@
 use crate::{graph::Graph, packing::pack};
 
-pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize, best: &mut Graph) -> u32 {
+pub fn search_graph(graph: &mut Graph, mut upper: i32, count: &mut usize, best: &mut Graph) -> i32 {
     *count += 1;
 
     let lower = pack(graph);
@@ -8,36 +8,58 @@ pub fn search_graph(graph: &mut Graph, mut upper: u32, count: &mut usize, best: 
         return upper;
     }
     if let Some((v1, v2)) = graph.best_edge() {
-        graph.snapshot();
-        let cost1 = graph.cut(v1, v2);
-        if cost1 < upper {
-            upper = search_graph(graph, upper - cost1, count, best) + cost1;
+        let before = graph.clone();
+        let edge = graph.cut(v1, v2);
+        if edge.weight < upper {
+            upper = search_graph(graph, upper - edge.weight, count, best) + edge.weight;
         }
-        graph.rollback();
-        let mut cost = graph.merge_cost(v1, v2);
-        let v3 = graph.merge(v1, v2);
+        graph.un_cut(v1, v2, edge);
+        debug_assert_eq!(graph, &before);
+
+        let (v_merge, mut cost) = graph.merge(v1, v2);
         assert!(cost > 0);
 
         if cost >= upper {
+            graph.un_merge(v1, v2, v_merge);
+            debug_assert_eq!(graph, &before);
+
             return upper;
         }
 
-        for edge in graph.edges(v3).positive().copied().collect::<Vec<_>>() {
-            graph.snapshot();
-            let cost2 = graph.merge_cost(v3, edge.to);
+        let vertices = graph.positive(v_merge).collect::<Vec<_>>();
+        let mut edges = Vec::new();
+        for v3 in vertices.iter().copied() {
+            let before2 = graph.clone();
+            let (v_merge_2, cost2) = graph.merge(v_merge, v3);
             if cost + cost2 < upper {
-                graph.merge(v3, edge.to);
                 upper = search_graph(graph, upper - cost - cost2, count, best) + cost + cost2;
             }
-            graph.rollback();
-            cost += graph.cut(v3, edge.to);
+            graph.un_merge(v_merge, v3, v_merge_2);
+            debug_assert_eq!(graph, &before2);
 
+            let edge = graph.cut(v_merge, v3);
+            edges.push(edge);
+            cost += edge.weight;
             if cost >= upper {
+                for (v3, edge) in vertices.into_iter().zip(edges.into_iter()) {
+                    graph.un_cut(v_merge, v3, edge)
+                }
+                graph.un_merge(v1, v2, v_merge);
+                debug_assert_eq!(graph, &before);
+
                 return upper;
             }
         }
 
-        search_graph(graph, upper - cost, count, best) + cost
+        upper = search_graph(graph, upper - cost, count, best) + cost;
+
+        for (v3, edge) in vertices.into_iter().zip(edges.into_iter()) {
+            graph.un_cut(v_merge, v3, edge)
+        }
+        graph.un_merge(v1, v2, v_merge);
+        debug_assert_eq!(graph, &before);
+
+        upper
     } else {
         *best = graph.clone();
         0

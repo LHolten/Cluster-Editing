@@ -2,42 +2,42 @@ use std::cmp::min;
 
 use crate::graph::Graph;
 
-pub fn pack(graph: &Graph) -> u32 {
+pub fn pack(graph: &Graph) -> i32 {
     for vertex in &graph.vertices {
         vertex.marked.set(false)
     }
 
     let mut cost = 0;
-    for vertex in graph.clusters() {
-        for edge in graph.edges(vertex).positive() {
-            if edge.to >= vertex {
+    for vertex in graph.clusters.iter() {
+        for vertex2 in graph.positive(vertex) {
+            if vertex2 >= vertex {
                 break;
             }
-            let (a_marked, b_marked) = (graph[vertex].marked.get(), graph[edge.to].marked.get());
-            if a_marked && b_marked {
+            let (marked1, marked2) = (graph[vertex].marked.get(), graph[vertex2].marked.get());
+            if marked1 && marked2 {
                 continue;
             }
 
-            for pair in graph.conflict_edges(vertex, edge.to) {
-                if pair.to >= vertex {
+            for pair in graph.conflict_edges(vertex, vertex2) {
+                if pair.to >= vertex2 {
                     break;
                 }
-                let c_marked = graph[pair.to].marked.get();
+                let marked3 = graph[pair.to].marked.get();
 
-                if pair.a_weight > 0 && pair.to >= edge.to
-                    || a_marked && pair.a_version == u32::MAX && c_marked
-                    || b_marked && pair.b_version == u32::MAX && c_marked
-                {
+                if marked3 && (marked1 && !pair.edge1.deleted || marked2 && !pair.edge2.deleted) {
                     continue;
                 }
 
                 graph[vertex].marked.set(true);
-                graph[edge.to].marked.set(true);
+                graph[vertex2].marked.set(true);
                 graph[pair.to].marked.set(true);
-                cost += min(min(edge.weight, pair.a_weight.abs()), pair.b_weight.abs());
+                cost += min(
+                    graph[vertex][vertex2].weight,
+                    min(pair.edge1.weight.abs(), pair.edge2.weight.abs()),
+                );
                 break;
             }
         }
     }
-    cost as u32
+    cost
 }

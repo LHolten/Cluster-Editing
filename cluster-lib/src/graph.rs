@@ -1,30 +1,45 @@
-use std::{cell::Cell, ops, slice::Iter};
+use std::cell::Cell;
 
 use std::ops::{Index, IndexMut};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct VertexIndex(pub u32);
+use bit_set::BitSet;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
-    versions: Vec<u32>,
+    pub clusters: BitSet,
+}
+
+impl PartialEq for Graph {
+    fn eq(&self, other: &Self) -> bool {
+        if self.clusters != other.clusters {
+            return false;
+        }
+        for vertex1 in self.clusters.iter() {
+            for vertex2 in self.clusters.iter() {
+                if self[vertex1][vertex2] != other[vertex1][vertex2] {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vertex {
     pub size: i32,
-    pub merged: Option<VertexIndex>,
+    pub merged: Option<usize>,
     pub edges: Vec<Edge>,
     pub marked: Cell<bool>,
 }
 
-impl Default for Vertex {
-    fn default() -> Self {
+impl Vertex {
+    pub fn new(size: usize) -> Self {
         Self {
             size: 1,
             merged: None,
-            edges: Vec::new(),
+            edges: vec![Edge::new(-1); size * 2 - 1],
             marked: Default::default(),
         }
     }
@@ -33,148 +48,83 @@ impl Default for Vertex {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
-    pub to: VertexIndex,
-    pub version: u32,
+    pub deleted: bool,
 }
 
 impl Edge {
-    pub fn new(to: VertexIndex) -> Self {
+    pub fn new(weight: i32) -> Self {
         Self {
-            weight: 1,
-            to,
-            version: u32::MAX,
+            weight,
+            deleted: false,
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            weight: -i32::MAX,
+            deleted: true,
         }
     }
 }
 
 impl Graph {
-    pub fn new(size: u32) -> Self {
+    pub fn new(size: usize) -> Self {
         Self {
-            vertices: vec![Vertex::default(); size as usize],
-            versions: vec![0],
+            vertices: vec![Vertex::new(size); size * 2 - 1],
+            clusters: (0..size).collect(),
         }
     }
 
-    pub fn snapshot(&mut self) {
-        self.versions.push(self.vertices.len() as u32)
+    pub fn cut(&mut self, v1: usize, v2: usize) -> Edge {
+        let edge = self[v1][v2];
+        self[v1][v2] = Edge::none();
+        self[v2][v1] = Edge::none();
+        edge
     }
 
-    pub fn rollback(&mut self) {
-        let len = self.versions.pop().unwrap();
-        let version = self.versions.len() as u32;
-        self.vertices.truncate(len as usize);
-
-        for vertex in &mut self.vertices {
-            if vertex.merged.is_some() && vertex.merged.unwrap().0 >= len {
-                vertex.merged = None
-            }
-            let mut edge_len = vertex.edges.len();
-            for (i, edge) in vertex.edges.iter_mut().enumerate() {
-                if edge.to.0 >= len {
-                    edge_len = i;
-                    break;
-                }
-                if edge.version > version {
-                    edge.version = u32::MAX
-                }
-            }
-            vertex.edges.truncate(edge_len)
-        }
+    pub fn un_cut(&mut self, v1: usize, v2: usize, edge: Edge) {
+        self[v1][v2] = edge;
+        self[v2][v1] = edge;
     }
 
-    // requires edge between vertices to be positive
-    pub fn cut(&mut self, v1: VertexIndex, v2: VertexIndex) -> u32 {
-        let version = self.versions.len() as u32;
-        let edges = &mut self[v1].edges;
-        let index = edges.binary_search_by_key(&v2, |e| e.to).unwrap();
-        edges[index].version = version;
-        let edges = &mut self[v2].edges;
-        let index = edges.binary_search_by_key(&v1, |e| e.to).unwrap();
-        edges[index].version = version;
-        assert!(edges[index].weight > 0);
-        edges[index].weight as u32
-    }
-
-    pub fn clusters(&self) -> ClusterIter<'_> {
-        ClusterIter {
-            graph: &self,
-            range: 0..self.vertices.len() as u32,
-        }
-    }
-
-    pub fn edges(&self, index: VertexIndex) -> EdgeIter<'_> {
-        EdgeIter {
-            graph: self,
-            edges: self[index].edges.iter(),
-        }
-    }
-
-    pub fn root(&self, index: VertexIndex) -> VertexIndex {
+    pub fn root(&self, index: usize) -> usize {
         if let Some(new_index) = self[index].merged {
             self.root(new_index)
         } else {
             index
         }
     }
+
+    pub fn positive(&self, index: usize) -> impl '_ + Iterator<Item = usize> {
+        let edges = &self[index];
+        self.clusters.iter().filter(move |to| edges[*to].weight > 0)
+    }
 }
 
-impl Index<VertexIndex> for Graph {
+impl Index<usize> for Graph {
     type Output = Vertex;
 
-    fn index(&self, index: VertexIndex) -> &Self::Output {
-        &self.vertices[index.0 as usize]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.vertices[index]
     }
 }
 
-impl IndexMut<VertexIndex> for Graph {
-    fn index_mut(&mut self, index: VertexIndex) -> &mut Self::Output {
-        &mut self.vertices[index.0 as usize]
+impl IndexMut<usize> for Graph {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.vertices[index]
     }
 }
 
-pub struct ClusterIter<'a> {
-    graph: &'a Graph,
-    range: ops::Range<u32>,
-}
+impl Index<usize> for Vertex {
+    type Output = Edge;
 
-impl<'a> Iterator for ClusterIter<'a> {
-    type Item = VertexIndex;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let index = self.range.next()?;
-            if self.graph.vertices[index as usize].merged.is_none() {
-                return Some(VertexIndex(index));
-            }
-        }
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.edges[index]
     }
 }
 
-#[derive(Clone)]
-pub struct EdgeIter<'a> {
-    graph: &'a Graph,
-    edges: Iter<'a, Edge>,
-}
-
-impl<'a> Iterator for EdgeIter<'a> {
-    type Item = &'a Edge;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let edge = self.edges.next()?;
-            if self.graph[edge.to].merged.is_none() && edge.version == u32::MAX {
-                return Some(edge);
-            }
-        }
-    }
-}
-
-impl<'a> EdgeIter<'a> {
-    pub fn positive(self) -> impl 'a + Iterator<Item = &'a Edge> {
-        self.filter(|e| e.weight > 0)
-    }
-
-    pub fn negative(self) -> impl 'a + Iterator<Item = &'a Edge> {
-        self.filter(|e| e.weight <= 0)
+impl IndexMut<usize> for Vertex {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.edges[index]
     }
 }

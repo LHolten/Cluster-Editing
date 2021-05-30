@@ -1,3 +1,5 @@
+extern crate bit_set;
+
 mod branch;
 mod critical;
 pub mod disk;
@@ -12,51 +14,41 @@ mod simplify;
 mod tests {
     use std::{fs::File, process::Command};
 
-    use crate::{
-        disk::{load, write_solution},
-        graph::Graph,
-        packing::pack,
-        search::search_graph,
-        simplify::simplify,
-    };
+    use crate::{disk::load, graph::Graph, packing::pack, search::search_graph};
 
     #[test]
     fn test() {
-        for instance in (25..50).step_by(2) {
+        for instance in (1..50).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            let mut output = Graph::new(0);
-            graph.snapshot();
+            let mut output = Graph::new(1);
             println!(
                 "{}",
-                search_graph(&mut graph, u32::MAX, &mut 0, &mut output)
+                search_graph(&mut graph, i32::MAX, &mut 0, &mut output)
             );
-            graph.rollback();
             let out_file = format!("../exact/solution{:03}.s", instance);
-            write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            // write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
 
-            assert_eq!(
-                Command::new("../verifier/verifier.exe")
-                    .args(&[file_name, out_file])
-                    .output()
-                    .unwrap()
-                    .stdout,
-                "OK\r\n".bytes().collect::<Vec<_>>()
-            )
+            // assert_eq!(
+            //     Command::new("../verifier/verifier.exe")
+            //         .args(&[file_name, out_file])
+            //         .output()
+            //         .unwrap()
+            //         .stdout,
+            //     "OK\r\n".bytes().collect::<Vec<_>>()
+            // )
         }
     }
 
-    #[test]
-    fn fuzz() {
-        let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
-        loop {
-            graph.snapshot();
-            simplify(&mut graph, 40);
-            search_graph(&mut graph, u32::MAX, &mut 0, &mut Graph::new(0));
-            graph.rollback();
-        }
-    }
+    // #[test]
+    // fn fuzz() {
+    //     let mut graph = load(File::open("../exact/exact003.gr").unwrap()).unwrap();
+    //     loop {
+    //         simplify(&mut graph, 40);
+    //         search_graph(&mut graph, u32::MAX, &mut 0, &mut Graph::new(0));
+    //     }
+    // }
 
     #[test]
     fn lower_bound() {
@@ -66,7 +58,7 @@ mod tests {
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let lower = pack(&graph);
-            let actual = search_graph(&mut graph, u32::MAX, &mut 0, &mut Graph::new(0));
+            let actual = search_graph(&mut graph, i32::MAX, &mut 0, &mut Graph::new(1));
             println!("{:.1}%", 100. * lower as f32 / actual as f32);
             bounds.push((lower, actual));
         }
@@ -95,24 +87,24 @@ mod tests {
         // }
     }
 
-    #[test]
-    fn edge_count() {
-        let graph = load(File::open("../exact/exact011.gr").unwrap()).unwrap();
-        let mut edge_count = Vec::new();
-        let mut positive_count = Vec::new();
-        for vertex in graph.clusters() {
-            edge_count.push(graph.edges(vertex).count());
-            positive_count.push(graph.edges(vertex).positive().count());
-        }
-        let count = edge_count.iter().sum::<usize>() / edge_count.len();
-        let positive = positive_count.iter().sum::<usize>() / edge_count.len();
-        println!(
-            "edge count: {}, positive: {}, vertices: {}",
-            count,
-            positive,
-            edge_count.len() - 1
-        )
-    }
+    // #[test]
+    // fn edge_count() {
+    //     let graph = load(File::open("../exact/exact011.gr").unwrap()).unwrap();
+    //     let mut edge_count = Vec::new();
+    //     let mut positive_count = Vec::new();
+    //     for vertex in graph.clusters() {
+    //         edge_count.push(graph.edges(vertex).count());
+    //         positive_count.push(graph.edges(vertex).positive().count());
+    //     }
+    //     let count = edge_count.iter().sum::<usize>() / edge_count.len();
+    //     let positive = positive_count.iter().sum::<usize>() / edge_count.len();
+    //     println!(
+    //         "edge count: {}, positive: {}, vertices: {}",
+    //         count,
+    //         positive,
+    //         edge_count.len() - 1
+    //     )
+    // }
 
     // #[test]
     // fn kernel() {

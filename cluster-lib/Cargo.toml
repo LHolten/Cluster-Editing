@@ -18,6 +18,7 @@ harness = false
 
 [dependencies]
 rand = "*"
+bit-set = "*"
 
 # [profile.bench]
 # lto = true
