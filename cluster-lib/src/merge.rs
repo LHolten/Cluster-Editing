@@ -1,6 +1,8 @@
 use std::{
     cmp::{self, min},
     iter::Peekable,
+    mem::replace,
+    slice::Iter,
 };
 
 use crate::graph::{Edge, EdgeIter, Graph, Vertex, VertexIndex};
@@ -53,30 +55,32 @@ impl Graph {
         &self,
         v1: VertexIndex,
         v2: VertexIndex,
-    ) -> impl '_ + Iterator<Item = (Option<&'_ Edge>, Option<&'_ Edge>)> {
-        let (mut a, mut b) = (self.edges(v1), self.edges(v2));
+    ) -> impl '_ + Iterator<Item = EdgePair> {
+        let (mut a, mut b) = (self[v1].edges.iter(), self[v2].edges.iter());
         AllEdges {
-            a_next: a.next(),
-            b_next: b.next(),
+            a_next: a.next().unwrap_or(NO_EDGE),
             a,
+            b_next: b.next().unwrap_or(NO_EDGE),
             b,
         }
-        .filter(move |(a, b)| {
-            (a.map(|e| e.weight > 0).unwrap_or(false) ^ b.map(|e| e.weight > 0).unwrap_or(false))
-                && a.map(|e| e.to != v2).unwrap_or(true)
-                && b.map(|e| e.to != v1).unwrap_or(true)
+        .filter(move |pair| {
+            self[pair.to].merged.is_none()
+                && (pair.a_weight.map(|w| w > 0).unwrap_or(false)
+                    ^ pair.b_weight.map(|w| w > 0).unwrap_or(false))
+                && pair.to != v1
+                && pair.to != v2
         })
     }
 
     pub fn merge_cost(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {
         let mut cost = 0;
-        for (a, b) in self.conflict_edges(v1, v2) {
+        for pair in self.conflict_edges(v1, v2) {
             let mut new_cost = i32::MAX;
-            if let Some(a) = a {
-                new_cost = a.weight.abs()
+            if let Some(a_weight) = pair.a_weight {
+                new_cost = a_weight.abs()
             }
-            if let Some(b) = b {
-                new_cost = min(new_cost, b.weight.abs())
+            if let Some(b_weight) = pair.b_weight {
+                new_cost = min(new_cost, b_weight.abs())
             }
             cost += new_cost;
         }
@@ -134,45 +138,69 @@ impl<'a> MergeEdges<'a> {
     }
 }
 
+const NO_EDGE: &Edge = &Edge {
+    weight: 1,
+    to: VertexIndex(u32::MAX),
+    version: u32::MAX,
+};
+
 pub struct AllEdges<'a> {
-    a: EdgeIter<'a>,
-    a_next: Option<&'a Edge>,
-    b: EdgeIter<'a>,
-    b_next: Option<&'a Edge>,
+    a_next: &'a Edge,
+    a: Iter<'a, Edge>,
+    b_next: &'a Edge,
+    b: Iter<'a, Edge>,
+}
+
+pub struct EdgePair {
+    pub to: VertexIndex,
+    pub a_weight: Option<i32>,
+    pub b_weight: Option<i32>,
+}
+
+impl EdgePair {
+    pub fn new(a: Option<&Edge>, b: Option<&Edge>) -> Self {
+        Self {
+            to: a.or(b).unwrap().to,
+            a_weight: a.and_then(|e| {
+                if e.version == u32::MAX {
+                    Some(e.weight)
+                } else {
+                    None
+                }
+            }),
+            b_weight: b.and_then(|e| {
+                if e.version == u32::MAX {
+                    Some(e.weight)
+                } else {
+                    None
+                }
+            }),
+        }
+    }
 }
 
 impl<'a> Iterator for AllEdges<'a> {
-    type Item = (Option<&'a Edge>, Option<&'a Edge>);
+    type Item = EdgePair;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        match (self.a_next.take(), self.b_next.take()) {
-            (None, None) => None,
-            (None, Some(b)) => {
-                self.b_next = self.b.next();
-                Some((None, Some(b)))
+        match self.a_next.to.cmp(&self.b_next.to) {
+            cmp::Ordering::Equal => {
+                if self.a_next.to == VertexIndex(u32::MAX) {
+                    return None;
+                }
+                let a = replace(&mut self.a_next, self.a.next().unwrap_or(NO_EDGE));
+                let b = replace(&mut self.b_next, self.b.next().unwrap_or(NO_EDGE));
+                Some(EdgePair::new(Some(a), Some(b)))
             }
-            (Some(a), None) => {
-                self.a_next = self.a.next();
-                Some((Some(a), None))
+            cmp::Ordering::Less => {
+                let a = replace(&mut self.a_next, self.a.next().unwrap_or(NO_EDGE));
+                Some(EdgePair::new(Some(a), None))
             }
-            (Some(a), Some(b)) => match a.to.cmp(&b.to) {
-                cmp::Ordering::Equal => {
-                    self.a_next = self.a.next();
-                    self.b_next = self.b.next();
-                    Some((Some(a), Some(b)))
-                }
-                cmp::Ordering::Less => {
-                    self.a_next = self.a.next();
-                    self.b_next = Some(b);
-                    Some((Some(a), None))
-                }
-                cmp::Ordering::Greater => {
-                    self.a_next = Some(a);
-                    self.b_next = self.b.next();
-                    Some((None, Some(b)))
-                }
-            },
+            cmp::Ordering::Greater => {
+                let b = replace(&mut self.b_next, self.b.next().unwrap_or(NO_EDGE));
+                Some(EdgePair::new(None, Some(b)))
+            }
         }
     }
 }

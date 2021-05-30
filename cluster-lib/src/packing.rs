@@ -18,29 +18,28 @@ pub fn pack(graph: &Graph) -> u32 {
                 continue;
             }
 
-            for (a, b) in graph.conflict_edges(vertex, edge.to) {
-                let edge2_to = a.or(b).unwrap().to;
-                if edge2_to >= vertex {
+            for pair in graph.conflict_edges(vertex, edge.to) {
+                if pair.to >= vertex {
                     break;
                 }
-                let c_marked = graph[edge2_to].marked.get();
+                let c_marked = graph[pair.to].marked.get();
 
-                if a.is_some() && edge2_to >= edge.to
-                    || a_marked && a.is_some() && c_marked
-                    || b_marked && b.is_some() && c_marked
+                if pair.a_weight.is_some() && pair.to >= edge.to
+                    || a_marked && pair.a_weight.is_some() && c_marked
+                    || b_marked && pair.b_weight.is_some() && c_marked
                 {
                     continue;
                 }
 
                 graph[vertex].marked.set(true);
                 graph[edge.to].marked.set(true);
-                graph[edge2_to].marked.set(true);
+                graph[pair.to].marked.set(true);
                 let mut new_cost = edge.weight;
-                if let Some(a) = a {
-                    new_cost = min(new_cost, a.weight.abs());
+                if let Some(a_weight) = pair.a_weight {
+                    new_cost = min(new_cost, a_weight.abs());
                 }
-                if let Some(b) = b {
-                    new_cost = min(new_cost, b.weight.abs());
+                if let Some(b_weight) = pair.b_weight {
+                    new_cost = min(new_cost, b_weight.abs());
                 }
 
                 cost += new_cost;
