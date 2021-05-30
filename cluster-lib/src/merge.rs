@@ -64,7 +64,12 @@ impl Graph {
 
     pub fn conflict_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
         self.all_edges(v1, v2)
-            .filter(move |pair| (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0))
+            .filter(|pair| (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0))
+    }
+
+    pub fn two_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
+        self.all_edges(v1, v2)
+            .filter(|pair| pair.edge1.weight > 0 && pair.edge2.weight > 0)
     }
 
     // pub fn merge_cost(&self, v1: VertexIndex, v2: VertexIndex) -> u32 {

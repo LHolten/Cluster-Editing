@@ -1,5 +1,4 @@
 use std::{
-    fs::File,
     io::{self, BufRead, BufReader, BufWriter, Read, Write},
     usize,
 };
@@ -39,41 +38,23 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
         }
     }
 
+    graph.add_indirect_edges();
+
     Ok(graph)
 }
 
 impl Graph {
-    // fn add_indirect_edges(&mut self) {
-    //     for vertex in self.clusters().collect::<Vec<_>>() {
-    //         for edge in self.edges(vertex).positive().copied().collect::<Vec<_>>() {
-    //             for edge2 in self.edges(edge.to).positive().copied().collect::<Vec<_>>() {
-    //                 if edge2.to == vertex {
-    //                     continue;
-    //                 }
-    //                 let pos = self[vertex].edges.binary_search_by_key(&edge2.to, |e| e.to);
-    //                 if let Err(pos) = pos {
-    //                     for (a, _) in self
-    //                         .merge_edges(vertex, edge2.to)
-    //                         .two_edges()
-    //                         .collect::<Vec<_>>()
-    //                     {
-    //                         if a.to != edge.to {
-    //                             self[vertex].edges.insert(
-    //                                 pos,
-    //                                 Edge {
-    //                                     weight: -1,
-    //                                     to: edge2.to,
-    //                                     version: u32::MAX,
-    //                                 },
-    //                             );
-    //                             break;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    fn add_indirect_edges(&mut self) {
+        for vertex1 in self.clusters.iter().collect::<Vec<_>>() {
+            for vertex2 in self.clusters.iter().collect::<Vec<_>>() {
+                if self[vertex1][vertex2].weight < 0
+                    && self.two_edges(vertex1, vertex2).count() <= 1
+                {
+                    self[vertex1][vertex2] = Edge::none()
+                }
+            }
+        }
+    }
 
     // fn vertex_size(&self, index: VertexIndex) -> u32 {
     //     let edges = self.edges(index).positive().collect::<Vec<_>>();
