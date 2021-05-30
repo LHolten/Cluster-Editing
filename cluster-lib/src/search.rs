@@ -1,8 +1,6 @@
 use crate::{graph::Graph, packing::pack};
 
-pub fn search_graph(graph: &mut Graph, mut upper: i32, count: &mut usize, best: &mut Graph) -> i32 {
-    *count += 1;
-
+pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 {
     let lower = pack(graph);
     if lower >= upper {
         return upper;
@@ -10,7 +8,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, count: &mut usize, best: 
     if let Some((v1, v2)) = graph.best_edge() {
         let edge = graph.cut(v1, v2);
         if edge.weight < upper {
-            upper = search_graph(graph, upper - edge.weight, count, best) + edge.weight;
+            upper = search_graph(graph, upper - edge.weight, best) + edge.weight;
         }
         graph.un_cut(v1, v2, edge);
 
@@ -28,7 +26,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, count: &mut usize, best: 
         for v3 in vertices.iter().copied() {
             let (v_merge_2, cost2) = graph.merge(v_merge, v3);
             if cost + cost2 < upper {
-                upper = search_graph(graph, upper - cost - cost2, count, best) + cost + cost2;
+                upper = search_graph(graph, upper - cost - cost2, best) + cost + cost2;
             }
             graph.un_merge(v_merge, v3, v_merge_2);
 
@@ -45,7 +43,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, count: &mut usize, best: 
             }
         }
 
-        upper = search_graph(graph, upper - cost, count, best) + cost;
+        upper = search_graph(graph, upper - cost, best) + cost;
 
         for (v3, edge) in vertices.into_iter().zip(edges.into_iter()) {
             graph.un_cut(v_merge, v3, edge)

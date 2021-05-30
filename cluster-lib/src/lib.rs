@@ -28,10 +28,7 @@ mod tests {
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let mut output = Graph::new(1);
-            println!(
-                "{}",
-                search_graph(&mut graph, i32::MAX, &mut 0, &mut output)
-            );
+            println!("{}", search_graph(&mut graph, i32::MAX, &mut output));
             let out_file = format!("../exact/solution{:03}.s", instance);
             write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
 
@@ -63,7 +60,7 @@ mod tests {
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let lower = pack(&graph);
-            let actual = search_graph(&mut graph, i32::MAX, &mut 0, &mut Graph::new(1));
+            let actual = search_graph(&mut graph, i32::MAX, &mut Graph::new(1));
             println!("{:.1}%", 100. * lower as f32 / actual as f32);
             bounds.push((lower, actual));
         }

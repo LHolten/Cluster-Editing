@@ -15,7 +15,7 @@ fn exact_track(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(instance), &input, |b, g| {
             b.iter_batched_ref(
                 || g.clone(),
-                |g| search_graph(g, i32::MAX, &mut 0, &mut Graph::new(1)),
+                |g| search_graph(g, i32::MAX, &mut Graph::new(1)),
                 criterion::BatchSize::LargeInput,
             );
         });

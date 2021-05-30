@@ -3,10 +3,6 @@ use std::cmp::min;
 use crate::graph::Graph;
 
 pub fn pack(graph: &Graph) -> i32 {
-    for vertex in &graph.vertices {
-        vertex.marked.set(false)
-    }
-
     let mut cost = 0;
     for vertex in graph.clusters.iter() {
         for vertex2 in graph.positive(vertex) {
@@ -39,5 +35,10 @@ pub fn pack(graph: &Graph) -> i32 {
             }
         }
     }
+
+    for vertex in graph.clusters.iter() {
+        graph[vertex].marked.set(false)
+    }
+
     cost
 }
