@@ -22,7 +22,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 
         }
 
         let mut vertices = graph.positive(v_merge, 0).map(|e| e.1).collect::<Vec<_>>();
-        vertices.sort_unstable_by_key(|&v| graph[v_merge][v].weight);
+        vertices.sort_unstable_by_key(|&v| -graph[v_merge][v].weight);
         let mut edges = Vec::new();
         for v3 in vertices.iter().copied() {
             let (v_merge_2, cost2) = graph.merge(v_merge, v3);
