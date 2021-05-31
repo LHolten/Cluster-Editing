@@ -6,21 +6,20 @@ pub fn pack(graph: &Graph) -> i32 {
     let mut cost = 0;
     for (i1, v1) in graph.clusters(0) {
         for (i2, v2) in graph.positive(v1, i1) {
-            let (marked1, marked2) = (graph[v1].marked.get(), graph[v2].marked.get());
-            if marked1 && marked2 {
+            if graph[v1][v2].marked.get() {
                 continue;
             }
 
             for pair in graph.conflict_edges(v1, v2, i2) {
-                let marked3 = graph[pair.to].marked.get();
-
-                if marked3 && (marked1 && !pair.edge1.deleted || marked2 && !pair.edge2.deleted) {
+                if !pair.edge1.deleted && pair.edge1.marked.get()
+                    || !pair.edge2.deleted && pair.edge2.marked.get()
+                {
                     continue;
                 }
 
-                graph[v1].marked.set(true);
-                graph[v2].marked.set(true);
-                graph[pair.to].marked.set(true);
+                pair.edge1.marked.set(true);
+                pair.edge2.marked.set(true);
+                graph[v1][v2].marked.set(true);
                 cost += min(
                     graph[v1][v2].weight,
                     min(pair.edge1.weight.abs(), pair.edge2.weight.abs()),
@@ -30,8 +29,10 @@ pub fn pack(graph: &Graph) -> i32 {
         }
     }
 
-    for (_, v) in graph.clusters(0) {
-        graph[v].marked.set(false)
+    for (i1, v1) in graph.clusters(0) {
+        for (_, v2) in graph.clusters(i1) {
+            graph[v1][v2].marked.set(false)
+        }
     }
 
     cost

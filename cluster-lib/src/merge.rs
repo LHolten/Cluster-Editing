@@ -26,13 +26,14 @@ impl Graph {
                 Edge {
                     weight: pair.edge1.weight + pair.edge2.weight,
                     deleted: pair.edge1.deleted || pair.edge2.deleted,
+                    marked: Default::default(),
                 }
             };
             // if weight > 0 {
             //     total_positive += weight;
             // }
             unsafe {
-                (&mut *graph)[index][pair.to] = edge;
+                (&mut *graph)[index][pair.to] = edge.clone();
                 (&mut *graph)[pair.to][index] = edge;
             }
         }
@@ -105,22 +106,22 @@ pub struct AllEdges<'a> {
     clusters: Clusters<'a>,
 }
 
-pub struct EdgePair {
+pub struct EdgePair<'a> {
     pub to: usize,
-    pub edge1: Edge,
-    pub edge2: Edge,
+    pub edge1: &'a Edge,
+    pub edge2: &'a Edge,
 }
 
 impl<'a> Iterator for AllEdges<'a> {
-    type Item = EdgePair;
+    type Item = EdgePair<'a>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let (_, to) = self.clusters.next()?;
         Some(EdgePair {
             to,
-            edge1: unsafe { *self.vertex1.edges.get_unchecked(to) },
-            edge2: unsafe { *self.vertex2.edges.get_unchecked(to) },
+            edge1: unsafe { self.vertex1.edges.get_unchecked(to) },
+            edge2: unsafe { self.vertex2.edges.get_unchecked(to) },
         })
     }
 }

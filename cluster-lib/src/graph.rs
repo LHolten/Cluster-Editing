@@ -1,5 +1,6 @@
 use std::cell::Cell;
 
+use std::mem::replace;
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone)]
@@ -33,7 +34,6 @@ pub struct Vertex {
     pub size: i32,
     pub merged: Option<usize>,
     pub edges: Vec<Edge>,
-    pub marked: Cell<bool>,
 }
 
 impl Vertex {
@@ -42,15 +42,15 @@ impl Vertex {
             size: 1,
             merged: None,
             edges: vec![Edge::new(-1); size * 2 - 1],
-            marked: Default::default(),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
     pub deleted: bool,
+    pub marked: Cell<bool>,
 }
 
 impl Edge {
@@ -58,6 +58,7 @@ impl Edge {
         Self {
             weight,
             deleted: false,
+            marked: Default::default(),
         }
     }
 
@@ -65,6 +66,7 @@ impl Edge {
         Self {
             weight: -i32::MAX,
             deleted: true,
+            marked: Default::default(),
         }
     }
 }
@@ -78,14 +80,13 @@ impl Graph {
     }
 
     pub fn cut(&mut self, v1: usize, v2: usize) -> Edge {
-        let edge = self[v1][v2];
-        self[v1][v2] = Edge::none();
+        let edge = replace(&mut self[v1][v2], Edge::none());
         self[v2][v1] = Edge::none();
         edge
     }
 
     pub fn un_cut(&mut self, v1: usize, v2: usize, edge: Edge) {
-        self[v1][v2] = edge;
+        self[v1][v2] = edge.clone();
         self[v2][v1] = edge;
     }
 
