@@ -127,7 +127,26 @@ impl Graph {
 //     Ok(())
 // }
 
-pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
+pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<i32> {
+    let out = unsafe { &*(output as *const Graph) };
+    for (i1, v1) in out.clusters(0) {
+        for (i2, v2) in out.positive(v1, i1) {
+            for pair in out.conflict_edges(v1, v2, i2) {
+                let edge_weight = output[v1][v2].weight;
+                if edge_weight <= pair.edge1.weight.abs() && edge_weight <= pair.edge2.weight.abs()
+                {
+                    output.cut(v1, v2);
+                } else if pair.edge1.weight > 0 {
+                    if pair.edge1.weight <= -pair.edge2.weight {
+                        output.cut(v1, pair.to);
+                    }
+                } else if pair.edge2.weight <= -pair.edge1.weight {
+                    output.cut(v2, pair.to);
+                }
+            }
+        }
+    }
+
     for mut v1 in output.clusters.clone() {
         if output[v1].merged.is_some() {
             continue;
@@ -138,13 +157,15 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     }
     let mut writer = BufWriter::new(file);
 
+    let mut count = 0;
     for (i1, v1) in input.clusters(0) {
         for (_, v2) in input.clusters(i1) {
             let edge = input[v1][v2].weight > 0;
             if edge != (output.root(v1) == output.root(v2)) {
-                writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?
+                writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
+                count += 1;
             }
         }
     }
-    Ok(())
+    Ok(count)
 }

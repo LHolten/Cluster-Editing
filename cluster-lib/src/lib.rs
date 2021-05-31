@@ -22,16 +22,19 @@ mod tests {
 
     #[test]
     fn test() {
-        for instance in (1..50).step_by(2) {
+        for instance in (25..200).step_by(2) {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let mut output = Graph::new(0);
-            println!("{}", search_components(&mut graph, &mut output));
+            let count = search_components(&mut graph, &mut output);
+            println!("{}", count);
             println!("time: {}", time.elapsed().as_secs());
             let out_file = format!("../exact/solution{:03}.s", instance);
-            write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            let count2 =
+                write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            assert_eq!(count, count2);
 
             assert_eq!(
                 std::str::from_utf8(

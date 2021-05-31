@@ -1,4 +1,7 @@
-use std::{cmp::min, mem::swap};
+use std::{
+    cmp::min,
+    mem::{swap, take},
+};
 
 use crate::{branch::EdgeMod, graph::Graph, packing::pack};
 
@@ -9,20 +12,27 @@ pub fn search_components(graph: &mut Graph, best: &mut Graph) -> i32 {
     let mut input = Graph::new(0);
     let mut input_ref = graph;
     let mut output = Graph::new(0);
+
+    let mut out_clusters = Vec::new();
+
     for mut component in components {
-        swap(&mut component, &mut input_ref.clusters);
+        swap(&mut input_ref.clusters, &mut component);
+
         let edges = input_ref.edge_count();
-        let max_edges = (input_ref.len * (input_ref.len - 1)) / 2;
+        let max_edges = (input_ref.clusters.len() * (input_ref.clusters.len() - 1)) / 2;
         let upper = min(edges, max_edges as i32 - edges) + 1;
 
         total += search_graph(input_ref, upper, &mut output);
-        swap(&mut component, &mut input_ref.clusters);
+
+        swap(&mut input_ref.clusters, &mut component);
+        out_clusters.extend(take(&mut output.clusters));
 
         input = output;
         input_ref = &mut input;
         output = Graph::new(0);
     }
 
+    input.clusters = out_clusters;
     *best = input;
     total
 }
