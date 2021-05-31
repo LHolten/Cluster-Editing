@@ -115,13 +115,13 @@ impl Index<usize> for Graph {
     type Output = Vertex;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.vertices[index]
+        unsafe { self.vertices.get_unchecked(index) }
     }
 }
 
 impl IndexMut<usize> for Graph {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.vertices[index]
+        unsafe { self.vertices.get_unchecked_mut(index) }
     }
 }
 
@@ -129,13 +129,13 @@ impl Index<usize> for Vertex {
     type Output = Edge;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.edges[index]
+        unsafe { self.edges.get_unchecked(index) }
     }
 }
 
 impl IndexMut<usize> for Vertex {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.edges[index]
+        unsafe { self.edges.get_unchecked_mut(index) }
     }
 }
 
