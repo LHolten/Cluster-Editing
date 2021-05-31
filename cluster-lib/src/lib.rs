@@ -1,4 +1,5 @@
 mod branch;
+mod component;
 mod critical;
 pub mod disk;
 pub mod graph;
@@ -10,33 +11,38 @@ mod simplify;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, process::Command};
+    use std::{fs::File, process::Command, time::Instant};
 
     use crate::{
         disk::{load, write_solution},
         graph::Graph,
         packing::pack,
-        search::search_graph,
+        search::search_components,
     };
 
     #[test]
     fn test() {
         for instance in (1..50).step_by(2) {
+            let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            let mut output = Graph::new(1);
-            println!("{}", search_graph(&mut graph, i32::MAX, &mut output));
+            let mut output = Graph::new(0);
+            println!("{}", search_components(&mut graph, i32::MAX, &mut output));
+            println!("time: {}", time.elapsed().as_secs());
             let out_file = format!("../exact/solution{:03}.s", instance);
             write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
 
             assert_eq!(
-                Command::new("../verifier/verifier.exe")
-                    .args(&[file_name, out_file])
-                    .output()
-                    .unwrap()
-                    .stdout,
-                "OK\r\n".bytes().collect::<Vec<_>>()
+                std::str::from_utf8(
+                    &Command::new("../verifier/verifier.exe")
+                        .args(&[file_name, out_file])
+                        .output()
+                        .unwrap()
+                        .stdout
+                )
+                .unwrap(),
+                "OK\r\n"
             )
         }
     }
@@ -58,7 +64,7 @@ mod tests {
             let mut graph = load(File::open(file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let lower = pack(&graph);
-            let actual = search_graph(&mut graph, i32::MAX, &mut Graph::new(1));
+            let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
             println!("{:.1}%", 100. * lower as f32 / actual as f32);
             bounds.push((lower, actual));
         }

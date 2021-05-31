@@ -1,16 +1,13 @@
 use std::cmp::{max, min};
 
-use crate::graph::{Clusters, Edge, Graph, Vertex};
+use crate::graph::{self, Clusters, Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: usize, v2: usize) -> (usize, i32) {
-        let mut index = 0;
-        self.clusters.retain(|&v| {
-            index = max(index, v);
-            v != v1 && v != v2
-        });
-        index += 1;
+        self.clusters.retain(|&v| v != v1 && v != v2);
+        let index = self.len;
+        self.len += 1;
 
         let mut cost = 0;
         let graph = self as *mut Graph;
@@ -56,6 +53,8 @@ impl Graph {
         self.clusters.swap_remove(pos.0 - 1);
         self.clusters.push(v1);
         self.clusters.push(v2);
+
+        self.len -= 1;
     }
 
     pub fn all_edges(

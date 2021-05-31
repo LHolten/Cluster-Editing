@@ -7,6 +7,7 @@ use std::ops::{Index, IndexMut};
 pub struct Graph {
     pub vertices: Vec<Vertex>,
     pub clusters: Vec<usize>,
+    pub len: usize,
 }
 
 impl PartialEq for Graph {
@@ -34,6 +35,7 @@ pub struct Vertex {
     pub size: i32,
     pub merged: Option<usize>,
     pub edges: Vec<Edge>,
+    pub marked: Cell<bool>,
 }
 
 impl Vertex {
@@ -41,7 +43,8 @@ impl Vertex {
         Self {
             size: 1,
             merged: None,
-            edges: vec![Edge::new(-1); size * 2 - 1],
+            edges: vec![Edge::new(-1); size * 2],
+            marked: Default::default(),
         }
     }
 }
@@ -74,8 +77,9 @@ impl Edge {
 impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
-            vertices: vec![Vertex::new(size); size * 2 - 1],
+            vertices: vec![Vertex::new(size); size * 2],
             clusters: (0..size).collect(),
+            len: size,
         }
     }
 
