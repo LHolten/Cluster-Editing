@@ -1,49 +1,30 @@
-use std::mem::swap;
+use std::{cmp::min, mem::swap};
 
 use crate::{branch::EdgeMod, graph::Graph, packing::pack};
 
-pub fn search_components(graph: &mut Graph, upper: i32, best: &mut Graph) -> i32 {
-    let mut components = graph.components();
-    let mut bounds = Vec::with_capacity(components.len());
-    for c in &mut components {
-        swap(c, &mut graph.clusters);
-        bounds.push(pack(graph));
-        swap(c, &mut graph.clusters);
-    }
-    let mut lower = bounds.iter().sum();
-
-    if lower >= upper {
-        return upper;
-    }
+pub fn search_components(graph: &mut Graph, best: &mut Graph) -> i32 {
+    let mut total = 0;
+    let components = graph.components();
 
     let mut input = Graph::new(0);
     let mut input_ref = graph;
     let mut output = Graph::new(0);
-    for (c, l) in components.iter_mut().zip(bounds.into_iter()) {
-        lower -= l;
+    for mut component in components {
+        swap(&mut component, &mut input_ref.clusters);
+        let edges = input_ref.edge_count();
+        let max_edges = (input_ref.len * (input_ref.len - 1)) / 2;
+        let upper = min(edges, max_edges as i32 - edges) + 1;
 
-        swap(c, &mut input_ref.clusters);
-        lower += search_graph(input_ref, upper - lower, &mut output);
-        swap(c, &mut input_ref.clusters);
+        total += search_graph(input_ref, upper, &mut output);
+        swap(&mut component, &mut input_ref.clusters);
 
-        if lower >= upper {
-            return upper;
-        }
         input = output;
         input_ref = &mut input;
         output = Graph::new(0);
     }
 
     *best = input;
-    lower
-}
-
-pub fn search_one(graph: &mut Graph, upper: i32, best: &mut Graph) -> i32 {
-    let lower = pack(graph);
-    if lower >= upper {
-        return upper;
-    }
-    search_graph(graph, upper, best)
+    total
 }
 
 pub fn search_merge(
@@ -69,7 +50,7 @@ pub fn search_merge(
     for v3 in vertices.iter().copied() {
         let (v_merge_2, cost2) = graph.merge(v_merge, v3);
         if cost + cost2 < upper {
-            upper = search_one(graph, upper - cost - cost2, best) + cost + cost2;
+            upper = search_graph(graph, upper - cost - cost2, best) + cost + cost2;
         }
         graph.un_merge(v_merge, v3, v_merge_2);
 
@@ -88,7 +69,7 @@ pub fn search_merge(
         }
     }
 
-    upper = search_one(graph, upper - cost, best) + cost;
+    upper = search_graph(graph, upper - cost, best) + cost;
 
     for (v3, edge) in vertices.into_iter().zip(edges.into_iter()) {
         graph.un_cut(v_merge, v3, edge)
@@ -107,7 +88,7 @@ pub fn search_cut(
 ) -> i32 {
     let edge = graph.cut(v1, v2);
     if edge.weight < upper {
-        upper = search_one(graph, upper - edge.weight, best) + edge.weight;
+        upper = search_graph(graph, upper - edge.weight, best) + edge.weight;
     }
     graph.un_cut(v1, v2, edge);
 
@@ -115,6 +96,10 @@ pub fn search_cut(
 }
 
 pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 {
+    let lower = pack(graph);
+    if lower >= upper {
+        return upper;
+    }
     match graph.best_edge() {
         EdgeMod::Merge(v1, v2) => {
             upper = search_merge(graph, upper, best, v1, v2);
@@ -126,7 +111,7 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 
         }
         EdgeMod::Nothing => {
             *best = graph.clone();
-            0
+            lower
         }
     }
 }

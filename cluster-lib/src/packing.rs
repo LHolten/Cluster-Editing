@@ -3,6 +3,12 @@ use std::cmp::min;
 use crate::graph::Graph;
 
 pub fn pack(graph: &Graph) -> i32 {
+    for (i1, v1) in graph.clusters(0) {
+        for (_, v2) in graph.clusters(i1) {
+            graph[v1][v2].marked.set(false)
+        }
+    }
+
     let mut cost = 0;
     for (i1, v1) in graph.clusters(0) {
         for (i2, v2) in graph.positive(v1, i1) {
@@ -26,12 +32,6 @@ pub fn pack(graph: &Graph) -> i32 {
                 );
                 break;
             }
-        }
-    }
-
-    for (i1, v1) in graph.clusters(0) {
-        for (_, v2) in graph.clusters(i1) {
-            graph[v1][v2].marked.set(false)
         }
     }
 

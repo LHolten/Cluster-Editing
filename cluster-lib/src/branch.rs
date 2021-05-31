@@ -1,4 +1,4 @@
-use std::{cmp::max, usize};
+use std::usize;
 
 use crate::graph::Graph;
 
@@ -22,17 +22,10 @@ impl Graph {
                 for pair in self.all_edges(v1, v2, 0) {
                     count += (-pair.edge1.weight ^ -pair.edge2.weight < 0) as i32;
                 }
-                // if count <= 2 {
-                //     continue;
-                // }
-                if count > best_count {
+                if count - self[v1][v2].marked.get() as i32 > best_count {
                     best_count = count;
                     best = EdgeMod::Delete(v1, v2)
                 }
-                // if self[v1][v2].weight > best_count {
-                //     best_count = self[v1][v2].weight;
-                //     best = EdgeMod::Merge(v1, v2)
-                // }
             }
         }
         best
