@@ -1,6 +1,6 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 
-use crate::graph::{self, Clusters, Edge, Graph, Vertex};
+use crate::graph::{Clusters, Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive

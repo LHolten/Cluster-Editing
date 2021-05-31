@@ -16,10 +16,6 @@ pub fn search_components(graph: &mut Graph, upper: i32, best: &mut Graph) -> i32
         return upper;
     }
 
-    if components.len() == 1 {
-        return search_graph(graph, upper, best);
-    }
-
     let mut input = Graph::new(0);
     let mut input_ref = graph;
     let mut output = Graph::new(0);
@@ -54,14 +50,15 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 
     if let Some((v1, v2)) = graph.best_edge() {
         let edge = graph.cut(v1, v2);
         if edge.weight < upper {
-            upper = search_components(graph, upper - edge.weight, best) + edge.weight;
+            upper = search_one(graph, upper - edge.weight, best) + edge.weight;
         }
         graph.un_cut(v1, v2, edge);
 
         let (v_merge, mut cost) = graph.merge(v1, v2);
         assert!(cost > 0);
 
-        if cost >= upper {
+        let lower = pack(graph);
+        if lower + cost >= upper {
             graph.un_merge(v1, v2, v_merge);
 
             return upper;
@@ -80,7 +77,9 @@ pub fn search_graph(graph: &mut Graph, mut upper: i32, best: &mut Graph) -> i32 
             let edge = graph.cut(v_merge, v3);
             cost += edge.weight;
             edges.push(edge);
-            if cost >= upper {
+
+            let lower = pack(graph);
+            if lower + cost >= upper {
                 for (v3, edge) in vertices.into_iter().zip(edges.into_iter()) {
                     graph.un_cut(v_merge, v3, edge)
                 }
