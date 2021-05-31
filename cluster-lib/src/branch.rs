@@ -13,7 +13,7 @@ impl Graph {
                 // let count = self.merge_cost(vertex, edge.to);
                 let mut count = 0;
                 for pair in self.all_edges(v1, v2, 0) {
-                    count += ((pair.edge1.weight > 0) ^ (pair.edge2.weight > 0)) as u32;
+                    count += (-pair.edge1.weight ^ -pair.edge2.weight < 0) as u32;
                 }
                 // if count >= 2 {
                 //     count = max(count, edge.weight as u32);

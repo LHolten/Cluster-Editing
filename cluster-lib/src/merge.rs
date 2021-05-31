@@ -17,7 +17,7 @@ impl Graph {
 
         // let mut total_positive = 0;
         for pair in self.all_edges(v1, v2, 0) {
-            if (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0) {
+            if -pair.edge1.weight ^ -pair.edge2.weight < 0 {
                 cost += min(pair.edge1.weight.abs(), pair.edge2.weight.abs());
             }
             let edge = if (pair.edge1.deleted) || (pair.edge2.deleted) {
@@ -77,7 +77,7 @@ impl Graph {
         from: usize,
     ) -> impl '_ + Iterator<Item = EdgePair> {
         self.all_edges(v1, v2, from)
-            .filter(|pair| (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0))
+            .filter(|pair| -pair.edge1.weight ^ -pair.edge2.weight < 0)
     }
 
     pub fn two_edges(
