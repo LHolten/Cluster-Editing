@@ -1,9 +1,6 @@
-use std::{
-    cmp::{max, min},
-    slice::Iter,
-};
+use std::cmp::{max, min};
 
-use crate::graph::{Edge, Graph, Vertex};
+use crate::graph::{Clusters, Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
@@ -19,7 +16,7 @@ impl Graph {
         let graph = self as *mut Graph;
 
         // let mut total_positive = 0;
-        for pair in self.all_edges(v1, v2) {
+        for pair in self.all_edges(v1, v2, 0) {
             if (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0) {
                 cost += min(pair.edge1.weight.abs(), pair.edge2.weight.abs());
             }
@@ -60,21 +57,36 @@ impl Graph {
         self.clusters.push(v2);
     }
 
-    pub fn all_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
+    pub fn all_edges(
+        &self,
+        v1: usize,
+        v2: usize,
+        from: usize,
+    ) -> impl '_ + Iterator<Item = EdgePair> {
         AllEdges {
             vertex1: &self[v1],
             vertex2: &self[v2],
-            clusters: self.clusters.iter(),
+            clusters: self.clusters(from),
         }
     }
 
-    pub fn conflict_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
-        self.all_edges(v1, v2)
+    pub fn conflict_edges(
+        &self,
+        v1: usize,
+        v2: usize,
+        from: usize,
+    ) -> impl '_ + Iterator<Item = EdgePair> {
+        self.all_edges(v1, v2, from)
             .filter(|pair| (pair.edge1.weight > 0) ^ (pair.edge2.weight > 0))
     }
 
-    pub fn two_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
-        self.all_edges(v1, v2)
+    pub fn two_edges(
+        &self,
+        v1: usize,
+        v2: usize,
+        from: usize,
+    ) -> impl '_ + Iterator<Item = EdgePair> {
+        self.all_edges(v1, v2, from)
             .filter(|pair| pair.edge1.weight > 0 && pair.edge2.weight > 0)
     }
 
@@ -90,7 +102,7 @@ impl Graph {
 pub struct AllEdges<'a> {
     vertex1: &'a Vertex,
     vertex2: &'a Vertex,
-    clusters: Iter<'a, usize>,
+    clusters: Clusters<'a>,
 }
 
 pub struct EdgePair {
@@ -104,11 +116,11 @@ impl<'a> Iterator for AllEdges<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        let to = *self.clusters.next()?;
+        let (_, to) = self.clusters.next()?;
         Some(EdgePair {
             to,
-            edge1: self.vertex1[to],
-            edge2: self.vertex2[to],
+            edge1: unsafe { *self.vertex1.edges.get_unchecked(to) },
+            edge2: unsafe { *self.vertex2.edges.get_unchecked(to) },
         })
     }
 }

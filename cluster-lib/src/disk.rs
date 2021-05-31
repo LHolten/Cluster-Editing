@@ -48,7 +48,7 @@ impl Graph {
         for vertex1 in self.clusters.clone() {
             for vertex2 in self.clusters.clone() {
                 if self[vertex1][vertex2].weight < 0
-                    && self.two_edges(vertex1, vertex2).count() <= 1
+                    && self.two_edges(vertex1, vertex2, 0).count() <= 1
                 {
                     self[vertex1][vertex2] = Edge::none()
                 }
