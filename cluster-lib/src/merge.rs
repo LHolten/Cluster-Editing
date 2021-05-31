@@ -1,13 +1,19 @@
-use std::cmp::min;
+use std::{
+    cmp::{max, min},
+    slice::Iter,
+};
 
 use crate::graph::{Edge, Graph, Vertex};
 
 impl Graph {
     // requires edge between vertices to be positive
     pub fn merge(&mut self, v1: usize, v2: usize) -> (usize, i32) {
-        let index = self.clusters.iter().last().unwrap() + 1;
-        self.clusters.remove(v1);
-        self.clusters.remove(v2);
+        let mut index = 0;
+        self.clusters.retain(|&v| {
+            index = max(index, v);
+            v != v1 && v != v2
+        });
+        index += 1;
 
         let mut cost = 0;
         let graph = self as *mut Graph;
@@ -38,8 +44,7 @@ impl Graph {
         //         edge.version = 0;
         //     }
         // }
-
-        self.clusters.insert(index);
+        self.clusters.push(index);
         self[v1].merged = Some(index);
         self[v2].merged = Some(index);
         (index, cost)
@@ -49,9 +54,10 @@ impl Graph {
         self[v1].merged = None;
         self[v2].merged = None;
 
-        self.clusters.remove(index);
-        self.clusters.insert(v1);
-        self.clusters.insert(v2);
+        let pos = self.clusters(0).find(|(_, v)| *v == index).unwrap();
+        self.clusters.swap_remove(pos.0 - 1);
+        self.clusters.push(v1);
+        self.clusters.push(v2);
     }
 
     pub fn all_edges(&self, v1: usize, v2: usize) -> impl '_ + Iterator<Item = EdgePair> {
@@ -84,7 +90,7 @@ impl Graph {
 pub struct AllEdges<'a> {
     vertex1: &'a Vertex,
     vertex2: &'a Vertex,
-    clusters: bit_set::Iter<'a, u32>,
+    clusters: Iter<'a, usize>,
 }
 
 pub struct EdgePair {
@@ -98,7 +104,7 @@ impl<'a> Iterator for AllEdges<'a> {
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        let to = self.clusters.next()?;
+        let to = *self.clusters.next()?;
         Some(EdgePair {
             to,
             edge1: self.vertex1[to],

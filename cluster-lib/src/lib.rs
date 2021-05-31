@@ -1,5 +1,3 @@
-extern crate bit_set;
-
 mod branch;
 mod critical;
 pub mod disk;

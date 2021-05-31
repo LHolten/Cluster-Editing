@@ -2,22 +2,24 @@ use std::cell::Cell;
 
 use std::ops::{Index, IndexMut};
 
-use bit_set::BitSet;
-
 #[derive(Debug, Clone)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
-    pub clusters: BitSet,
+    pub clusters: Vec<usize>,
 }
 
 impl PartialEq for Graph {
     fn eq(&self, other: &Self) -> bool {
-        if self.clusters != other.clusters {
+        let mut self_clusters = self.clusters.clone();
+        let mut other_clusters = other.clusters.clone();
+        self_clusters.sort_unstable();
+        other_clusters.sort_unstable();
+        if self_clusters != other_clusters {
             return false;
         }
-        for vertex1 in self.clusters.iter() {
-            for vertex2 in self.clusters.iter() {
-                if self[vertex1][vertex2] != other[vertex1][vertex2] {
+        for (i1, v1) in self.clusters(0) {
+            for (_, v2) in self.clusters(i1) {
+                if self[v1][v2] != other[v1][v2] {
                     return false;
                 }
             }
@@ -95,9 +97,17 @@ impl Graph {
         }
     }
 
-    pub fn positive(&self, index: usize) -> impl '_ + Iterator<Item = usize> {
+    pub fn positive(&self, index: usize, from: usize) -> impl '_ + Iterator<Item = (usize, usize)> {
         let edges = &self[index];
-        self.clusters.iter().filter(move |to| edges[*to].weight > 0)
+        self.clusters(from)
+            .filter(move |(_, to)| edges[*to].weight > 0)
+    }
+
+    pub fn clusters(&self, from: usize) -> Clusters {
+        Clusters {
+            from,
+            clusters: &self.clusters,
+        }
     }
 }
 
@@ -126,5 +136,20 @@ impl Index<usize> for Vertex {
 impl IndexMut<usize> for Vertex {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.edges[index]
+    }
+}
+
+pub struct Clusters<'a> {
+    from: usize,
+    clusters: &'a Vec<usize>,
+}
+
+impl<'a> Iterator for Clusters<'a> {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let res = *self.clusters.get(self.from)?;
+        self.from += 1;
+        Some((self.from, res))
     }
 }

@@ -4,18 +4,15 @@ use crate::graph::Graph;
 
 pub fn pack(graph: &Graph) -> i32 {
     let mut cost = 0;
-    for vertex in graph.clusters.iter() {
-        for vertex2 in graph.positive(vertex) {
-            if vertex2 >= vertex {
-                break;
-            }
-            let (marked1, marked2) = (graph[vertex].marked.get(), graph[vertex2].marked.get());
+    for (i1, v1) in graph.clusters(0) {
+        for (_, v2) in graph.positive(v1, i1) {
+            let (marked1, marked2) = (graph[v1].marked.get(), graph[v2].marked.get());
             if marked1 && marked2 {
                 continue;
             }
 
-            for pair in graph.conflict_edges(vertex, vertex2) {
-                if pair.to >= vertex2 {
+            for pair in graph.conflict_edges(v1, v2) {
+                if pair.to >= v1 {
                     break;
                 }
                 let marked3 = graph[pair.to].marked.get();
@@ -24,11 +21,11 @@ pub fn pack(graph: &Graph) -> i32 {
                     continue;
                 }
 
-                graph[vertex].marked.set(true);
-                graph[vertex2].marked.set(true);
+                graph[v1].marked.set(true);
+                graph[v2].marked.set(true);
                 graph[pair.to].marked.set(true);
                 cost += min(
-                    graph[vertex][vertex2].weight,
+                    graph[v1][v2].weight,
                     min(pair.edge1.weight.abs(), pair.edge2.weight.abs()),
                 );
                 break;
@@ -36,8 +33,8 @@ pub fn pack(graph: &Graph) -> i32 {
         }
     }
 
-    for vertex in graph.clusters.iter() {
-        graph[vertex].marked.set(false)
+    for (_, v) in graph.clusters(0) {
+        graph[v].marked.set(false)
     }
 
     cost

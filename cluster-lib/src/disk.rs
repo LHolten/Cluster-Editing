@@ -45,8 +45,8 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
 
 impl Graph {
     fn add_indirect_edges(&mut self) {
-        for vertex1 in self.clusters.iter().collect::<Vec<_>>() {
-            for vertex2 in self.clusters.iter().collect::<Vec<_>>() {
+        for vertex1 in self.clusters.clone() {
+            for vertex2 in self.clusters.clone() {
                 if self[vertex1][vertex2].weight < 0
                     && self.two_edges(vertex1, vertex2).count() <= 1
                 {
@@ -125,25 +125,21 @@ impl Graph {
 // }
 
 pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
-    for mut vertex in output.clusters.iter().collect::<Vec<_>>() {
-        if output[vertex].merged.is_some() {
+    for mut v1 in output.clusters.clone() {
+        if output[v1].merged.is_some() {
             continue;
         }
-        for vertex2 in output.positive(vertex).collect::<Vec<_>>() {
-            vertex = output.merge(vertex, vertex2).0;
+        for (_, v2) in output.positive(v1, 0).collect::<Vec<_>>() {
+            v1 = output.merge(v1, v2).0;
         }
     }
     let mut writer = BufWriter::new(file);
 
-    for vertex1 in input.clusters.iter() {
-        for vertex2 in input.clusters.iter() {
-            if vertex2 >= vertex1 {
-                break;
-            }
-
-            let edge = input[vertex1][vertex2].weight > 0;
-            if edge != (output.root(vertex1) == output.root(vertex2)) {
-                writeln!(&mut writer, "{} {}", vertex1 + 1, vertex2 + 1)?
+    for (i1, v1) in input.clusters(0) {
+        for (_, v2) in input.clusters(i1) {
+            let edge = input[v1][v2].weight > 0;
+            if edge != (output.root(v1) == output.root(v2)) {
+                writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?
             }
         }
     }
