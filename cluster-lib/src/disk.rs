@@ -71,12 +71,15 @@ impl Graph {
     //     self.clusters().map(|v| self.vertex_size(v)).sum()
     // }
 
-    // fn edge_count(&self) -> u32 {
-    //     self.clusters()
-    //         .map(|v| self.edges(v).positive().map(|e| e.weight).sum::<i32>())
-    //         .sum::<i32>() as u32
-    //         / 2
-    // }
+    pub fn edge_count(&self) -> i32 {
+        let mut total = 0;
+        for (i1, v1) in self.clusters(0) {
+            for (_, v2) in self.clusters(i1) {
+                total += (self[v1][v2].weight > 0) as i32
+            }
+        }
+        total
+    }
 }
 
 // pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
