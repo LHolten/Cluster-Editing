@@ -3,7 +3,11 @@ use std::{
     mem::{swap, take},
 };
 
-use crate::{branch::EdgeMod, graph::Graph, packing::pack};
+use crate::{
+    branch::EdgeMod,
+    graph::{Edge, Graph},
+    packing::pack,
+};
 
 impl Graph {
     pub fn search_components(&mut self, best: &mut Graph) -> i32 {
@@ -27,6 +31,13 @@ impl Graph {
             total += input_ref.search_graph(lower, upper, &mut output);
 
             swap(&mut input_ref.clusters, &mut component);
+
+            for v1 in out_clusters.iter().copied() {
+                for v2 in output.clusters.clone() {
+                    output[v1][v2] = Edge::none();
+                    output[v2][v1] = Edge::none();
+                }
+            }
             out_clusters.extend(take(&mut output.clusters));
 
             input = output;
@@ -35,6 +46,7 @@ impl Graph {
         }
 
         input.clusters = out_clusters;
+        input.check_easy();
         *best = input;
         total
     }
@@ -113,6 +125,7 @@ impl Graph {
             }
             EdgeMod::Nothing => {
                 // println!("{}", upper);
+                self.check_easy();
                 *best = self.clone();
                 lower
             }

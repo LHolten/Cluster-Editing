@@ -65,6 +65,18 @@ impl Graph {
         }
         total
     }
+
+    pub fn check_easy(&self) {
+        for (i1, v1) in self.clusters(0) {
+            for (_, v2) in self.positive(v1, i1) {
+                let mut num = 0;
+                for _ in self.conflict_edges(v1, v2, 0) {
+                    num += 1;
+                }
+                assert!(num <= 3);
+            }
+        }
+    }
 }
 
 pub fn finish_solve(output: &mut Graph) {

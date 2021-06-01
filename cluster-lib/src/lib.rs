@@ -16,12 +16,11 @@ mod tests {
     use crate::{
         disk::{load, write, write_solution},
         graph::Graph,
-        packing::pack,
     };
 
     #[test]
     fn test() {
-        for instance in (1..=15).step_by(2) {
+        for instance in (97..=97).step_by(2) {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
@@ -31,7 +30,8 @@ mod tests {
             println!("c: {}", count);
             println!("t: {}", time.elapsed().as_millis());
             let out_file = format!("../exact/solution{:03}.s", instance);
-            // write(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            let out_file2 = format!("../exact/solution{:03}.gr", instance);
+            write(&graph, &mut output, File::create(&out_file2).unwrap()).unwrap();
 
             let count2 =
                 write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
@@ -60,26 +60,26 @@ mod tests {
     //     }
     // }
 
-    #[test]
-    fn lower_bound() {
-        // let mut bounds = Vec::new();
-        for instance in (1..200).step_by(2) {
-            let file_name = format!("../exact/exact{:03}.gr", instance);
-            let mut graph = load(File::open(file_name).unwrap()).unwrap();
-            // critical(&mut graph);
-            let lower = pack(&graph);
-            println!("{}", lower);
-            // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
-            // println!("{:.1}%", 100. * lower as f32 / actual as f32);
-            // bounds.push((lower, actual));
-        }
-        // let percentage = bounds
-        //     .iter()
-        //     .map(|(l, a)| *l as f32 / *a as f32)
-        //     .sum::<f32>()
-        //     / bounds.len() as f32;
-        // println!("{:.1}%", 100. * percentage)
-    }
+    // #[test]
+    // fn lower_bound() {
+    //     // let mut bounds = Vec::new();
+    //     for instance in (1..200).step_by(2) {
+    //         let file_name = format!("../exact/exact{:03}.gr", instance);
+    //         let mut graph = load(File::open(file_name).unwrap()).unwrap();
+    //         // critical(&mut graph);
+    //         let lower = pack(&graph);
+    //         println!("{}", lower);
+    //         // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
+    //         // println!("{:.1}%", 100. * lower as f32 / actual as f32);
+    //         // bounds.push((lower, actual));
+    //     }
+    //     // let percentage = bounds
+    //     //     .iter()
+    //     //     .map(|(l, a)| *l as f32 / *a as f32)
+    //     //     .sum::<f32>()
+    //     //     / bounds.len() as f32;
+    //     // println!("{:.1}%", 100. * percentage)
+    // }
 
     #[test]
     fn edge_count() {
