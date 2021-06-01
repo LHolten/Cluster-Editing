@@ -67,7 +67,7 @@ impl Graph {
     }
 }
 
-pub fn finish_solve(input: &Graph, output: &mut Graph) {
+pub fn finish_solve(output: &mut Graph) {
     let out = unsafe { &*(output as *const Graph) };
     for (i1, v1) in out.clusters(0) {
         for (i2, v2) in out.positive(v1, i1) {
@@ -98,7 +98,7 @@ pub fn finish_solve(input: &Graph, output: &mut Graph) {
 }
 
 pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<i32> {
-    finish_solve(input, output);
+    finish_solve(output);
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
@@ -115,7 +115,7 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
 }
 
 pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
-    finish_solve(input, output);
+    finish_solve(output);
     let mut writer = BufWriter::new(file);
     // writeln!(
     //     &mut writer,

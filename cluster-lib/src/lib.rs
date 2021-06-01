@@ -17,7 +17,6 @@ mod tests {
         disk::{load, write, write_solution},
         graph::Graph,
         packing::pack,
-        search::search_components,
     };
 
     #[test]
@@ -28,27 +27,27 @@ mod tests {
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let mut output = Graph::new(0);
-            let count = search_components(&mut graph, &mut output);
+            let count = graph.search_components(&mut output);
             println!("c: {}", count);
             println!("t: {}", time.elapsed().as_millis());
-            let out_file = format!("../exact/solution{:03}.gr", instance);
-            write(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            let out_file = format!("../exact/solution{:03}.s", instance);
+            // write(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
 
-            // let count2 =
-            //     write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
-            // assert_eq!(count, count2);
+            let count2 =
+                write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
+            assert_eq!(count, count2);
 
-            // assert_eq!(
-            //     std::str::from_utf8(
-            //         &Command::new("../verifier/verifier.exe")
-            //             .args(&[file_name, out_file])
-            //             .output()
-            //             .unwrap()
-            //             .stdout
-            //     )
-            //     .unwrap(),
-            //     "OK\r\n"
-            // )
+            assert_eq!(
+                std::str::from_utf8(
+                    &Command::new("../verifier/verifier.exe")
+                        .args(&[file_name, out_file])
+                        .output()
+                        .unwrap()
+                        .stdout
+                )
+                .unwrap(),
+                "OK\r\n"
+            )
         }
     }
 
