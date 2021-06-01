@@ -56,21 +56,6 @@ impl Graph {
         }
     }
 
-    // fn vertex_size(&self, index: VertexIndex) -> u32 {
-    //     let edges = self.edges(index).positive().collect::<Vec<_>>();
-    //     if edges.is_empty() {
-    //         0
-    //     } else if edges.len() == 1 {
-    //         edges[0].weight as u32
-    //     } else {
-    //         1
-    //     }
-    // }
-
-    // fn size(&self) -> u32 {
-    //     self.clusters().map(|v| self.vertex_size(v)).sum()
-    // }
-
     pub fn edge_count(&self) -> i32 {
         let mut total = 0;
         for (i1, v1) in self.clusters(0) {
@@ -82,52 +67,7 @@ impl Graph {
     }
 }
 
-// pub fn write(graph: &mut Graph, file: File) -> io::Result<()> {
-//     let mut writer = BufWriter::new(file);
-//     writeln!(&mut writer, "p cep {} {}", graph.size(), graph.edge_count())?;
-
-//     let mut new_index = vec![1];
-//     for vertex in 0..graph.vertices.len() as u32 {
-//         let vertex = VertexIndex(vertex);
-//         if graph[vertex].merged.is_some() {
-//             new_index.push(*new_index.last().unwrap());
-//             continue;
-//         }
-//         let size = graph.vertex_size(vertex);
-//         new_index.push(new_index.last().unwrap() + size);
-
-//         if size == 1 {
-//             for edge in graph.edges(vertex).positive() {
-//                 if vertex < edge.to {
-//                     break;
-//                 }
-//                 writeln!(
-//                     &mut writer,
-//                     "{} {}",
-//                     new_index[vertex.0 as usize], new_index[edge.to.0 as usize]
-//                 )?
-//             }
-//         }
-//         if size > 1 {
-//             for from in new_index[vertex.0 as usize]..(new_index[vertex.0 as usize] + size) {
-//                 for from2 in new_index[vertex.0 as usize]..from {
-//                     writeln!(&mut writer, "{} {}", from, from2)?
-//                 }
-
-//                 for edge in graph.edges(vertex).positive() {
-//                     if vertex < edge.to {
-//                         break;
-//                     }
-//                     writeln!(&mut writer, "{} {}", from, new_index[edge.to.0 as usize])?
-//                 }
-//             }
-//         }
-//     }
-
-//     Ok(())
-// }
-
-pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<i32> {
+pub fn finish_solve(input: &Graph, output: &mut Graph) {
     let out = unsafe { &*(output as *const Graph) };
     for (i1, v1) in out.clusters(0) {
         for (i2, v2) in out.positive(v1, i1) {
@@ -155,6 +95,10 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
             v1 = output.merge(v1, v2).0;
         }
     }
+}
+
+pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<i32> {
+    finish_solve(input, output);
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
@@ -168,4 +112,24 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
         }
     }
     Ok(count)
+}
+
+pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
+    finish_solve(input, output);
+    let mut writer = BufWriter::new(file);
+    // writeln!(
+    //     &mut writer,
+    //     "p cep {} {}",
+    //     input.clusters.len(),
+    //     output.edge_count()
+    // )?;
+
+    for (i1, v1) in input.clusters(0) {
+        for (_, v2) in input.clusters(i1) {
+            if output.root(v1) == output.root(v2) {
+                writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
+            }
+        }
+    }
+    Ok(())
 }
