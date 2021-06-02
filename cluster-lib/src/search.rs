@@ -6,7 +6,6 @@ use std::{
 use crate::{
     branch::EdgeMod,
     graph::{Edge, Graph},
-    packing::pack,
 };
 
 impl Graph {
@@ -27,7 +26,7 @@ impl Graph {
             let max_edges = (input_ref.clusters.len() * (input_ref.clusters.len() - 1)) / 2;
             let upper = min(edges, max_edges as i32 - edges) + 1;
 
-            let lower = pack(input_ref);
+            let lower = input_ref.pack();
             total += input_ref.search_graph(lower, upper, &mut output);
 
             swap(&mut input_ref.clusters, &mut component);
@@ -55,7 +54,7 @@ impl Graph {
         let (v_merge, cost) = self.merge(v1, v2);
         debug_assert!(cost > 0);
 
-        let lower = pack(self);
+        let lower = self.pack();
         if lower + cost < upper {
             let im_graph = unsafe { &*(self as *const Graph) };
             self.clusters.sort_unstable_by_key(|&v| {
@@ -83,14 +82,14 @@ impl Graph {
         let first = self.positive(v1, i1).next();
         if let Some((i2, v2)) = first {
             let edge = self.cut(v1, v2);
-            let lower = pack(self);
+            let lower = self.pack();
             if lower + edge.weight < upper {
                 upper = self.merge_one(lower, upper - edge.weight, best, i2, v1) + edge.weight;
             }
             self.un_cut(v1, v2, edge);
 
             let (v_merge_2, cost2) = self.merge(v1, v2);
-            let lower = pack(self);
+            let lower = self.pack();
             if lower + cost2 < upper {
                 upper = self.search_graph(lower, upper - cost2, best) + cost2;
             }
@@ -104,7 +103,7 @@ impl Graph {
 
     pub fn search_cut(&mut self, mut upper: i32, best: &mut Graph, v1: usize, v2: usize) -> i32 {
         let edge = self.cut(v1, v2);
-        let lower = pack(self);
+        let lower = self.pack();
         if lower + edge.weight < upper {
             upper = self.search_graph(lower, upper - edge.weight, best) + edge.weight;
         }

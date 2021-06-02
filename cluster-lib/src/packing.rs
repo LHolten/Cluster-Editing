@@ -2,38 +2,40 @@ use std::cmp::min;
 
 use crate::graph::Graph;
 
-pub fn pack(graph: &Graph) -> i32 {
-    for (i1, v1) in graph.clusters(0) {
-        for (_, v2) in graph.clusters(i1) {
-            graph[v1][v2].marked.set(false)
-        }
-    }
-
-    let mut cost = 0;
-    for (i1, v1) in graph.clusters(0) {
-        for (i2, v2) in graph.positive(v1, i1) {
-            if graph[v1][v2].marked.get() {
-                continue;
+impl Graph {
+    pub fn pack(&self) -> i32 {
+        for (i1, v1) in self.clusters(0) {
+            for (_, v2) in self.clusters(i1) {
+                self[v1][v2].marked.set(false)
             }
+        }
 
-            for pair in graph.conflict_edges(v1, v2, i2) {
-                if !pair.edge1.deleted && pair.edge1.marked.get()
-                    || !pair.edge2.deleted && pair.edge2.marked.get()
-                {
+        let mut cost = 0;
+        for (i1, v1) in self.clusters(0) {
+            for (i2, v2) in self.positive(v1, i1) {
+                if self[v1][v2].marked.get() {
                     continue;
                 }
 
-                pair.edge1.marked.set(true);
-                pair.edge2.marked.set(true);
-                graph[v1][v2].marked.set(true);
-                cost += min(
-                    graph[v1][v2].weight,
-                    min(pair.edge1.weight.abs(), pair.edge2.weight.abs()),
-                );
-                break;
+                for pair in self.conflict_edges(v1, v2, i2) {
+                    if !pair.edge1.deleted && pair.edge1.marked.get()
+                        || !pair.edge2.deleted && pair.edge2.marked.get()
+                    {
+                        continue;
+                    }
+
+                    pair.edge1.marked.set(true);
+                    pair.edge2.marked.set(true);
+                    self[v1][v2].marked.set(true);
+                    cost += min(
+                        self[v1][v2].weight,
+                        min(pair.edge1.weight.abs(), pair.edge2.weight.abs()),
+                    );
+                    break;
+                }
             }
         }
-    }
 
-    cost
+        cost
+    }
 }
