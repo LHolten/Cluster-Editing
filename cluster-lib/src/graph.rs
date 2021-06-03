@@ -1,9 +1,8 @@
 use std::cell::Cell;
-
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
     pub clusters: Vec<usize>,
@@ -30,12 +29,46 @@ impl PartialEq for Graph {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl Clone for Graph {
+    fn clone(&self) -> Self {
+        Self {
+            vertices: self.vertices.clone(),
+            clusters: self.clusters.clone(),
+            len: self.len,
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        self.vertices.clone_from_slice(&source.vertices);
+        self.clusters.clone_from(&source.clusters);
+        self.len = source.len;
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Vertex {
     pub size: i32,
     pub merged: Option<usize>,
     pub edges: Vec<Edge>,
     pub marked: Cell<bool>,
+}
+
+impl Clone for Vertex {
+    fn clone(&self) -> Self {
+        Self {
+            size: self.size,
+            merged: self.merged,
+            edges: self.edges.clone(),
+            marked: self.marked.clone(),
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        self.size = source.size;
+        self.merged = source.merged;
+        self.edges.copy_from_slice(&source.edges);
+        self.marked = source.marked.clone()
+    }
 }
 
 impl Vertex {
@@ -49,11 +82,11 @@ impl Vertex {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
     pub fixed: bool,
-    pub marked: Cell<bool>,
+    pub marked: bool,
 }
 
 impl Edge {
@@ -90,7 +123,7 @@ impl Graph {
     }
 
     pub fn un_cut(&mut self, v1: usize, v2: usize, edge: Edge) {
-        self[v1][v2] = edge.clone();
+        self[v1][v2] = edge;
         self[v2][v1] = edge;
     }
 

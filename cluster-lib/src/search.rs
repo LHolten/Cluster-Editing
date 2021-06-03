@@ -1,6 +1,6 @@
 use std::{
     cmp::min,
-    mem::{swap, take},
+    mem::{replace, swap, take},
 };
 
 use crate::{
@@ -10,43 +10,35 @@ use crate::{
 
 impl Graph {
     pub fn search_components(&mut self, best: &mut Graph) -> i32 {
+        let original = self.clone();
+
         let mut total = 0;
         let components = self.components();
 
-        let mut input = Graph::new(0);
-        let mut input_ref = self;
-        let mut output = Graph::new(0);
+        let mut out_clusters: Vec<usize> = Vec::new();
 
-        let mut out_clusters = Vec::new();
-
-        for mut component in components {
-            swap(&mut input_ref.clusters, &mut component);
-
-            let edges = input_ref.edge_count();
-            let max_edges = (input_ref.clusters.len() * (input_ref.clusters.len() - 1)) / 2;
+        for component in components {
+            self.clusters = component;
+            let edges = self.edge_count();
+            let max_edges = (self.clusters.len() * (self.clusters.len() - 1)) / 2;
             let upper = min(edges, max_edges as i32 - edges) + 1;
 
-            let lower = input_ref.pack();
-            total += input_ref.search_graph(lower, upper, &mut output);
-
-            swap(&mut input_ref.clusters, &mut component);
+            let lower = self.pack();
+            total += self.search_graph(lower, upper, best);
 
             for v1 in out_clusters.iter().copied() {
-                for v2 in output.clusters.clone() {
-                    output[v1][v2] = Edge::none();
-                    output[v2][v1] = Edge::none();
+                for v2 in best.clusters.iter().copied() {
+                    best.vertices[v1][v2] = Edge::none();
+                    best.vertices[v2][v1] = Edge::none();
                 }
             }
-            out_clusters.extend(take(&mut output.clusters));
-
-            input = output;
-            input_ref = &mut input;
-            output = Graph::new(0);
+            out_clusters.extend(take(&mut best.clusters));
+            swap(self, best);
         }
 
-        input.clusters = out_clusters;
-        input.check_easy();
-        *best = input;
+        self.clusters = out_clusters;
+        self.check_easy();
+        *best = replace(self, original);
         total
     }
 
@@ -62,7 +54,7 @@ impl Graph {
                 for pair in im_graph.all_edges(v_merge, v, 0) {
                     count += (-pair.edge1.weight ^ -pair.edge2.weight < 0) as i32;
                 }
-                -count + im_graph[v_merge][v].marked.get() as i32
+                -count + im_graph[v_merge][v].marked as i32
             });
             upper = self.merge_one(lower, upper - cost, best, 0, v_merge) + cost
         }
@@ -125,7 +117,7 @@ impl Graph {
             EdgeMod::Nothing => {
                 // println!("{}", upper);
                 self.check_easy();
-                *best = self.clone();
+                best.clone_from(self);
                 lower
             }
         }

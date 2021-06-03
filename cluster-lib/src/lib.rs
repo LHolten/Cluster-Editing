@@ -13,22 +13,19 @@ mod simplify;
 mod tests {
     use std::{fs::File, process::Command, time::Instant};
 
-    use crate::{
-        disk::{load, write, write_solution},
-        graph::Graph,
-    };
+    use crate::disk::{load, write, write_solution};
 
     #[test]
     fn test() {
         let instances = vec![
-            13, 1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 97, 113, 115,
+            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 97, 113, 115,
         ];
         for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            let mut output = Graph::new(0);
+            let mut output = graph.clone();
             let count = graph.search_components(&mut output);
             println!("c: {}", count);
             println!("{}", time.elapsed().as_millis());
