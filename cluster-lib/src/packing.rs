@@ -18,8 +18,8 @@ impl Graph {
                 }
 
                 for pair in self.conflict_edges(v1, v2, i2) {
-                    if !pair.edge1.deleted && pair.edge1.marked.get()
-                        || !pair.edge2.deleted && pair.edge2.marked.get()
+                    if !pair.edge1.fixed && pair.edge1.marked.get()
+                        || !pair.edge2.fixed && pair.edge2.marked.get()
                     {
                         continue;
                     }

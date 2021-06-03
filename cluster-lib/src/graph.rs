@@ -52,7 +52,7 @@ impl Vertex {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub weight: i32,
-    pub deleted: bool,
+    pub fixed: bool,
     pub marked: Cell<bool>,
 }
 
@@ -60,7 +60,7 @@ impl Edge {
     pub fn new(weight: i32) -> Self {
         Self {
             weight,
-            deleted: false,
+            fixed: false,
             marked: Default::default(),
         }
     }
@@ -68,7 +68,7 @@ impl Edge {
     pub fn none() -> Self {
         Self {
             weight: -i32::MAX,
-            deleted: true,
+            fixed: true,
             marked: Default::default(),
         }
     }

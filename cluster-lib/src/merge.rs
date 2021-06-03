@@ -17,12 +17,12 @@ impl Graph {
             if -pair.edge1.weight ^ -pair.edge2.weight < 0 {
                 cost += min(pair.edge1.weight.abs(), pair.edge2.weight.abs());
             }
-            let edge = if (pair.edge1.deleted) || (pair.edge2.deleted) {
+            let edge = if (pair.edge1.fixed) || (pair.edge2.fixed) {
                 Edge::none()
             } else {
                 Edge {
                     weight: pair.edge1.weight + pair.edge2.weight,
-                    deleted: pair.edge1.deleted || pair.edge2.deleted,
+                    fixed: pair.edge1.fixed || pair.edge2.fixed,
                     marked: Default::default(),
                 }
             };

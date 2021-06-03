@@ -20,7 +20,10 @@ mod tests {
 
     #[test]
     fn test() {
-        for instance in (97..=97).step_by(2) {
+        let instances = vec![
+            13, 1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 97, 113, 115,
+        ];
+        for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let mut graph = load(File::open(&file_name).unwrap()).unwrap();
@@ -28,7 +31,7 @@ mod tests {
             let mut output = Graph::new(0);
             let count = graph.search_components(&mut output);
             println!("c: {}", count);
-            println!("t: {}", time.elapsed().as_millis());
+            println!("{}", time.elapsed().as_millis());
             let out_file = format!("../exact/solution{:03}.s", instance);
             let out_file2 = format!("../exact/solution{:03}.gr", instance);
             write(&graph, &mut output, File::create(&out_file2).unwrap()).unwrap();
