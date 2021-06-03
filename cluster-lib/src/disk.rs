@@ -45,8 +45,8 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
 
 impl Graph {
     fn add_indirect_edges(&mut self) {
-        for vertex1 in self.clusters.clone() {
-            for vertex2 in self.clusters.clone() {
+        for vertex1 in self.active.clone() {
+            for vertex2 in self.active.clone() {
                 if self[vertex1][vertex2].weight < 0
                     && self.two_edges(vertex1, vertex2, 0).count() <= 1
                 {
@@ -58,8 +58,8 @@ impl Graph {
 
     pub fn edge_count(&self) -> i32 {
         let mut total = 0;
-        for (i1, v1) in self.clusters(0) {
-            for (_, v2) in self.clusters(i1) {
+        for (i1, v1) in self.all(0) {
+            for (_, v2) in self.all(i1) {
                 total += (self[v1][v2].weight > 0) as i32
             }
         }
@@ -67,7 +67,7 @@ impl Graph {
     }
 
     pub fn check_easy(&self) {
-        for (i1, v1) in self.clusters(0) {
+        for (i1, v1) in self.all(0) {
             for (_, v2) in self.positive(v1, i1) {
                 let mut num = 0;
                 for _ in self.conflict_edges(v1, v2, 0) {
@@ -81,25 +81,25 @@ impl Graph {
 
 pub fn finish_solve(output: &mut Graph) {
     let out = unsafe { &*(output as *const Graph) };
-    for (i1, v1) in out.clusters(0) {
+    for (i1, v1) in out.all(0) {
         for (i2, v2) in out.positive(v1, i1) {
-            for pair in out.conflict_edges(v1, v2, i2) {
-                let edge_weight = output[v1][v2].weight;
-                if edge_weight <= pair.edge1.weight.abs() && edge_weight <= pair.edge2.weight.abs()
-                {
+            let edge_weight = output[v1][v2].weight;
+            for (_, v3) in out.conflict_edges(v1, v2, i2) {
+                let (edge1, edge2) = (output[v1][v3], output[v2][v3]);
+                if edge_weight <= edge1.weight.abs() && edge_weight <= edge2.weight.abs() {
                     output.cut(v1, v2);
-                } else if pair.edge1.weight > 0 {
-                    if pair.edge1.weight <= -pair.edge2.weight {
-                        output.cut(v1, pair.to);
+                } else if edge1.weight > 0 {
+                    if edge1.weight <= -edge2.weight {
+                        output.cut(v1, v3);
                     }
-                } else if pair.edge2.weight <= -pair.edge1.weight {
-                    output.cut(v2, pair.to);
+                } else if edge2.weight <= -edge1.weight {
+                    output.cut(v2, v3);
                 }
             }
         }
     }
 
-    for mut v1 in output.clusters.clone() {
+    for mut v1 in output.active.clone() {
         if output[v1].merged.is_some() {
             continue;
         }
@@ -114,8 +114,8 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
-    for (i1, v1) in input.clusters(0) {
-        for (_, v2) in input.clusters(i1) {
+    for (i1, v1) in input.all(0) {
+        for (_, v2) in input.all(i1) {
             let edge = input[v1][v2].weight > 0;
             if edge != (output.root(v1) == output.root(v2)) {
                 writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
@@ -136,8 +136,8 @@ pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result
     //     output.edge_count()
     // )?;
 
-    for (i1, v1) in input.clusters(0) {
-        for (_, v2) in input.clusters(i1) {
+    for (i1, v1) in input.all(0) {
+        for (_, v2) in input.all(i1) {
             if output.root(v1) == output.root(v2) {
                 writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
             }

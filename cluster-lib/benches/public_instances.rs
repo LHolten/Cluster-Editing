@@ -1,4 +1,6 @@
-use cluster_lib::{disk::load, graph::Graph};
+use cluster_lib::disk::load;
+
+use cluster_lib::search::Solver;
 use criterion::{criterion_group, criterion_main, SamplingMode};
 
 use std::fs::File;
@@ -12,18 +14,14 @@ fn exact_track(c: &mut Criterion) {
     group.sample_size(10);
     for instance in (1..=11).step_by(2) {
         let input = load(File::open(format!("../exact/exact{:03}.gr", instance)).unwrap()).unwrap();
-        let output = input.clone();
-        group.bench_with_input(
-            BenchmarkId::from_parameter(instance),
-            &(input, output),
-            |b, g| {
-                b.iter_batched_ref(
-                    || g.clone(),
-                    |(g, o)| g.search_components(o),
-                    criterion::BatchSize::LargeInput,
-                );
-            },
-        );
+        let solver = Solver::new(input);
+        group.bench_with_input(BenchmarkId::from_parameter(instance), &solver, |b, g| {
+            b.iter_batched_ref(
+                || g.clone(),
+                |s| s.search_components(),
+                criterion::BatchSize::LargeInput,
+            );
+        });
     }
     group.finish();
 }

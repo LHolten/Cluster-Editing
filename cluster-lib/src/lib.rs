@@ -13,7 +13,10 @@ mod simplify;
 mod tests {
     use std::{fs::File, process::Command, time::Instant};
 
-    use crate::disk::{load, write, write_solution};
+    use crate::{
+        disk::{load, write, write_solution},
+        search::Solver,
+    };
 
     #[test]
     fn test() {
@@ -23,19 +26,28 @@ mod tests {
         for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
-            let mut graph = load(File::open(&file_name).unwrap()).unwrap();
+            let graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            let mut output = graph.clone();
-            let count = graph.search_components(&mut output);
-            println!("c: {}", count);
+            let mut solver = Solver::new(graph);
+            solver.search_components();
+            println!("c: {}", solver.upper);
             println!("{}", time.elapsed().as_millis());
             let out_file = format!("../exact/solution{:03}.s", instance);
             let out_file2 = format!("../exact/solution{:03}.gr", instance);
-            write(&graph, &mut output, File::create(&out_file2).unwrap()).unwrap();
+            write(
+                &solver.graph,
+                &mut solver.best,
+                File::create(&out_file2).unwrap(),
+            )
+            .unwrap();
 
-            let count2 =
-                write_solution(&graph, &mut output, File::create(&out_file).unwrap()).unwrap();
-            assert_eq!(count, count2);
+            let count2 = write_solution(
+                &solver.graph,
+                &mut solver.best,
+                File::create(&out_file).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(solver.upper, count2);
 
             assert_eq!(
                 std::str::from_utf8(
@@ -84,7 +96,7 @@ mod tests {
     #[test]
     fn edge_count() {
         let graph = load(File::open("../exact/exact025.gr").unwrap()).unwrap();
-        for vertex in graph.clusters.clone() {
+        for vertex in graph.active.clone() {
             println!("{}", graph.positive(vertex, 0).count());
         }
     }

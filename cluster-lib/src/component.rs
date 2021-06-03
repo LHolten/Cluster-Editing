@@ -1,28 +1,28 @@
-use crate::graph::Graph;
+use crate::{graph::Graph, search::Solver};
 
-impl Graph {
-    pub fn components(&self) -> Vec<Vec<usize>> {
+impl Solver {
+    pub fn components(&mut self) -> Vec<Vec<usize>> {
         let mut components = Vec::new();
-        for (_, v) in self.clusters(0) {
-            if !self[v].marked.get() {
+        for (_, v) in self.graph.all(0) {
+            if !self.vertex_markers[v] {
                 let mut component = Vec::new();
-                self.add_connected(v, &mut component);
+                add_connected(&self.graph, v, &mut component, &mut self.vertex_markers);
                 components.push(component)
             }
         }
-        for (_, v) in self.clusters(0) {
-            self[v].marked.set(false)
+        for (_, v) in self.graph.all(0) {
+            self.vertex_markers[v] = false;
         }
         components
     }
+}
 
-    fn add_connected(&self, v1: usize, component: &mut Vec<usize>) {
-        component.push(v1);
-        self[v1].marked.set(true);
-        for (_, v2) in self.positive(v1, 0) {
-            if !self[v2].marked.get() {
-                self.add_connected(v2, component);
-            }
+fn add_connected(graph: &Graph, v1: usize, component: &mut Vec<usize>, marked: &mut Vec<bool>) {
+    component.push(v1);
+    marked[v1] = true;
+    for (_, v2) in graph.positive(v1, 0) {
+        if !marked[v2] {
+            add_connected(graph, v2, component, marked);
         }
     }
 }

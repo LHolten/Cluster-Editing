@@ -1,25 +1,24 @@
-use std::cell::Cell;
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug)]
 pub struct Graph {
     pub vertices: Vec<Vertex>,
-    pub clusters: Vec<usize>,
+    pub active: Vec<usize>,
     pub len: usize,
 }
 
 impl PartialEq for Graph {
     fn eq(&self, other: &Self) -> bool {
-        let mut self_clusters = self.clusters.clone();
-        let mut other_clusters = other.clusters.clone();
+        let mut self_clusters = self.active.clone();
+        let mut other_clusters = other.active.clone();
         self_clusters.sort_unstable();
         other_clusters.sort_unstable();
         if self_clusters != other_clusters {
             return false;
         }
-        for (i1, v1) in self.clusters(0) {
-            for (_, v2) in self.clusters(i1) {
+        for (i1, v1) in self.all(0) {
+            for (_, v2) in self.all(i1) {
                 if self[v1][v2] != other[v1][v2] {
                     return false;
                 }
@@ -33,14 +32,14 @@ impl Clone for Graph {
     fn clone(&self) -> Self {
         Self {
             vertices: self.vertices.clone(),
-            clusters: self.clusters.clone(),
+            active: self.active.clone(),
             len: self.len,
         }
     }
 
     fn clone_from(&mut self, source: &Self) {
         self.vertices.clone_from_slice(&source.vertices);
-        self.clusters.clone_from(&source.clusters);
+        self.active.clone_from(&source.active);
         self.len = source.len;
     }
 }
@@ -50,7 +49,6 @@ pub struct Vertex {
     pub size: i32,
     pub merged: Option<usize>,
     pub edges: Vec<Edge>,
-    pub marked: Cell<bool>,
 }
 
 impl Clone for Vertex {
@@ -59,7 +57,6 @@ impl Clone for Vertex {
             size: self.size,
             merged: self.merged,
             edges: self.edges.clone(),
-            marked: self.marked.clone(),
         }
     }
 
@@ -67,7 +64,6 @@ impl Clone for Vertex {
         self.size = source.size;
         self.merged = source.merged;
         self.edges.copy_from_slice(&source.edges);
-        self.marked = source.marked.clone()
     }
 }
 
@@ -77,7 +73,6 @@ impl Vertex {
             size: 1,
             merged: None,
             edges: vec![Edge::new(-1); size * 2],
-            marked: Default::default(),
         }
     }
 }
@@ -86,7 +81,6 @@ impl Vertex {
 pub struct Edge {
     pub weight: i32,
     pub fixed: bool,
-    pub marked: bool,
 }
 
 impl Edge {
@@ -94,7 +88,6 @@ impl Edge {
         Self {
             weight,
             fixed: false,
-            marked: Default::default(),
         }
     }
 
@@ -102,7 +95,6 @@ impl Edge {
         Self {
             weight: -i32::MAX,
             fixed: true,
-            marked: Default::default(),
         }
     }
 }
@@ -111,7 +103,7 @@ impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
             vertices: vec![Vertex::new(size); size * 2],
-            clusters: (0..size).collect(),
+            active: (0..size).collect(),
             len: size,
         }
     }
@@ -135,16 +127,15 @@ impl Graph {
         }
     }
 
-    pub fn positive(&self, index: usize, from: usize) -> impl '_ + Iterator<Item = (usize, usize)> {
-        let edges = &self[index];
-        self.clusters(from)
-            .filter(move |(_, to)| edges[*to].weight > 0)
+    pub fn positive(&self, v1: usize, from: usize) -> impl '_ + Iterator<Item = (usize, usize)> {
+        self.all(from)
+            .filter(move |&(_, v2)| self[v1][v2].weight > 0)
     }
 
-    pub fn clusters(&self, from: usize) -> Clusters {
+    pub fn all(&self, from: usize) -> Clusters {
         Clusters {
             from,
-            clusters: &self.clusters,
+            clusters: &self.active,
         }
     }
 }
