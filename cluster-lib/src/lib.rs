@@ -21,8 +21,9 @@ mod tests {
     #[test]
     fn test() {
         let instances = vec![
-            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 97, 113, 115,
+            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 49, 97, 113, 115, 137,
         ];
+        let instances_hard = vec![17, 39];
         for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);

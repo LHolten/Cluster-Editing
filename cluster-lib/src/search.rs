@@ -1,4 +1,7 @@
-use std::mem::{replace, swap, take};
+use std::{
+    cmp::min,
+    mem::{replace, swap, take},
+};
 
 use crate::{
     branch::EdgeMod,
@@ -10,7 +13,7 @@ pub struct Solver {
     pub graph: Graph,
     pub upper: i32,
     pub best: Graph,
-    pub edge_markers: Vec<Vec<bool>>,
+    pub edge_markers: Vec<Vec<i32>>,
     pub vertex_markers: Vec<bool>,
     pub edge_conflicts: Vec<i32>,
 }
@@ -22,7 +25,7 @@ impl Solver {
             graph: graph.clone(),
             upper: i32::MAX,
             best: graph,
-            edge_markers: vec![vec![false; len]; len],
+            edge_markers: vec![vec![0; len]; len],
             vertex_markers: vec![false; len],
             edge_conflicts: vec![0; len],
         }
@@ -39,7 +42,10 @@ impl Solver {
         for component in components {
             self.graph.active = component;
 
-            self.upper = i32::MAX;
+            let edges = self.graph.edge_count();
+            let max_edges = (self.graph.active.len() * (self.graph.active.len() - 1)) / 2;
+            self.upper = min(edges, max_edges as i32 - edges) + 1;
+
             let lower = self.pack();
             self.search_graph(lower);
             total += self.upper;
@@ -72,7 +78,7 @@ impl Solver {
                     count +=
                         (-self.graph[vv1][vv3].weight ^ -self.graph[vv2][vv3].weight < 0) as i32;
                 }
-                self.edge_conflicts[vv2] = -count + self.edge_markers[vv1][vv2] as i32;
+                self.edge_conflicts[vv2] = -count + (self.edge_markers[vv1][vv2] != 0) as i32;
             }
             let conflicts = &self.edge_conflicts;
             self.graph

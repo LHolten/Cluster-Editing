@@ -22,8 +22,8 @@ impl Solver {
                 for (_, v3) in self.graph.all(0) {
                     count += (-self.graph[v1][v3].weight ^ -self.graph[v2][v3].weight < 0) as i32;
                 }
-                if count - self.edge_markers[v1][v2] as i32 > best_count {
-                    best_count = count - self.edge_markers[v1][v2] as i32;
+                if count - (self.edge_markers[v1][v2] != 0) as i32 > best_count {
+                    best_count = count - (self.edge_markers[v1][v2] != 0) as i32;
                     best = EdgeMod::Delete(v1, v2)
                 }
             }
