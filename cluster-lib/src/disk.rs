@@ -77,6 +77,20 @@ impl Graph {
             }
         }
     }
+    // pub fn check_easy(&self) {
+    //     for (i1, v1) in self.all(0) {
+    //         for (_, v2) in self.positive(v1, i1) {
+    //             let e12 = self[v1][v2].weight > 0;
+    //             let mut num = if e12 { -2 } else { 0 };
+    //             for (_, v3) in self.all(0) {
+    //                 let e13 = self[v1][v3].weight > 0;
+    //                 let e23 = self[v2][v3].weight > 0;
+    //                 num += ((e12 | e13 | e23) & !(e12 ^ e13 ^ e23)) as i32;
+    //             }
+    //             assert!(num <= 1);
+    //         }
+    //     }
+    // }
 }
 
 pub fn finish_solve(output: &mut Graph) {

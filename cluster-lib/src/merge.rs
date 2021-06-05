@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 
 use crate::graph::{Edge, Graph};
 
@@ -10,7 +10,7 @@ impl Graph {
         let vv = self.len;
         self.len += 1;
 
-        let mut cost = 0;
+        let mut cost = max(0, -self[v1][v2].weight);
         for &v3 in &self.active {
             if -self[v1][v3].weight ^ -self[v2][v3].weight < 0 {
                 cost += min(self[v1][v3].weight.abs(), self[v2][v3].weight.abs());

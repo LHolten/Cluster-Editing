@@ -23,8 +23,9 @@ mod tests {
         let instances = vec![
             1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 49, 97, 113, 115, 137,
         ];
-        let instances_hard = vec![17, 39];
-        for instance in instances {
+        // let instances_hard = vec![17, 39];
+        let zero = vec![31, 41, 13];
+        for instance in zero {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let graph = load(File::open(&file_name).unwrap()).unwrap();
@@ -48,7 +49,7 @@ mod tests {
                 File::create(&out_file).unwrap(),
             )
             .unwrap();
-            assert_eq!(solver.upper, count2);
+            // assert_eq!(solver.upper, count2);
 
             assert_eq!(
                 std::str::from_utf8(
@@ -73,26 +74,27 @@ mod tests {
     //     }
     // }
 
-    // #[test]
-    // fn lower_bound() {
-    //     // let mut bounds = Vec::new();
-    //     for instance in (1..200).step_by(2) {
-    //         let file_name = format!("../exact/exact{:03}.gr", instance);
-    //         let mut graph = load(File::open(file_name).unwrap()).unwrap();
-    //         // critical(&mut graph);
-    //         let lower = pack(&graph);
-    //         println!("{}", lower);
-    //         // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
-    //         // println!("{:.1}%", 100. * lower as f32 / actual as f32);
-    //         // bounds.push((lower, actual));
-    //     }
-    //     // let percentage = bounds
-    //     //     .iter()
-    //     //     .map(|(l, a)| *l as f32 / *a as f32)
-    //     //     .sum::<f32>()
-    //     //     / bounds.len() as f32;
-    //     // println!("{:.1}%", 100. * percentage)
-    // }
+    #[test]
+    fn lower_bound() {
+        // let mut bounds = Vec::new();
+        for instance in (1..200).step_by(2) {
+            let file_name = format!("../exact/exact{:03}.gr", instance);
+            let graph = load(File::open(file_name).unwrap()).unwrap();
+            let mut solver = Solver::new(graph);
+            // critical(&mut graph);
+            let lower = solver.pack();
+            println!("{:03} {}", instance, lower);
+            // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
+            // println!("{:.1}%", 100. * lower as f32 / actual as f32);
+            // bounds.push((lower, actual));
+        }
+        // let percentage = bounds
+        //     .iter()
+        //     .map(|(l, a)| *l as f32 / *a as f32)
+        //     .sum::<f32>()
+        //     / bounds.len() as f32;
+        // println!("{:.1}%", 100. * percentage)
+    }
 
     #[test]
     fn edge_count() {

@@ -1,5 +1,5 @@
 use std::{
-    cmp::min,
+    cmp::{max, min},
     mem::{replace, swap, take},
 };
 
@@ -15,7 +15,10 @@ pub struct Solver {
     pub best: Graph,
     pub edge_markers: Vec<Vec<i32>>,
     pub vertex_markers: Vec<bool>,
-    pub edge_conflicts: Vec<i32>,
+    pub edge_one: Vec<Vec<i32>>,
+    pub edge_two: Vec<Vec<i32>>,
+    pub edge_three: Vec<Vec<i32>>,
+    pub max: i32,
 }
 
 impl Solver {
@@ -27,7 +30,10 @@ impl Solver {
             best: graph,
             edge_markers: vec![vec![0; len]; len],
             vertex_markers: vec![false; len],
-            edge_conflicts: vec![0; len],
+            edge_one: vec![vec![0; len]; len],
+            edge_two: vec![vec![0; len]; len],
+            edge_three: vec![vec![0; len]; len],
+            max: 0,
         }
     }
 
@@ -62,7 +68,7 @@ impl Solver {
 
         self.best = replace(&mut self.graph, original);
         self.best.active = out_clusters;
-        self.best.check_easy();
+        // self.best.check_easy();
         self.upper = total;
     }
 
@@ -72,57 +78,51 @@ impl Solver {
 
         let lower = self.pack();
         if lower + cost < self.upper {
-            for (_, vv2) in self.graph.all(0) {
-                let mut count = 0;
-                for (_, vv3) in self.graph.all(0) {
-                    count +=
-                        (-self.graph[vv1][vv3].weight ^ -self.graph[vv2][vv3].weight < 0) as i32;
-                }
-                self.edge_conflicts[vv2] = -count + (self.edge_markers[vv1][vv2] != 0) as i32;
-            }
-            let conflicts = &self.edge_conflicts;
+            let two = &self.edge_two;
+            let marker = &self.edge_markers;
             self.graph
                 .active
-                .sort_unstable_by_key(|&vv2| conflicts[vv2]);
+                .sort_unstable_by_key(|&vv2| marker[vv1][vv2] - two[vv1][vv2]);
             self.upper -= cost;
-            self.merge_one(lower, 0, vv1);
+            // self.merge_one(lower, 0, vv1);
+            self.search_graph(lower);
             self.upper += cost;
         }
         self.graph.un_merge(v1, v2, vv1);
     }
 
-    pub fn merge_one(&mut self, lower: i32, i1: usize, v1: usize) {
-        let first = self.graph.positive(v1, i1).next();
-        if let Some((i2, v2)) = first {
-            let edge = self.graph.cut(v1, v2);
-            let lower = self.pack();
-            if lower + edge.weight < self.upper {
-                self.upper -= edge.weight;
-                self.merge_one(lower, i2, v1);
-                self.upper += edge.weight;
-            }
-            self.graph.un_cut(v1, v2, edge);
+    // pub fn merge_one(&mut self, lower: i32, i1: usize, v1: usize) {
+    //     let first = self.graph.positive(v1, i1).next();
+    //     if let Some((i2, v2)) = first {
+    //         let edge = self.graph.cut(v1, v2);
+    //         let lower = self.pack();
+    //         if lower + max(0, edge.weight) < self.upper {
+    //             self.upper -= max(0, edge.weight);
+    //             self.merge_one(lower, i2, v1);
+    //             self.upper += max(0, edge.weight);
+    //         }
+    //         self.graph.un_cut(v1, v2, edge);
 
-            let (v_merge_2, cost2) = self.graph.merge(v1, v2);
-            let lower = self.pack();
-            if lower + cost2 < self.upper {
-                self.upper -= cost2;
-                self.search_graph(lower);
-                self.upper += cost2;
-            }
-            self.graph.un_merge(v1, v2, v_merge_2);
-        } else {
-            self.search_graph(lower)
-        }
-    }
+    //         let (v_merge_2, cost2) = self.graph.merge(v1, v2);
+    //         let lower = self.pack();
+    //         if lower + cost2 < self.upper {
+    //             self.upper -= cost2;
+    //             self.search_graph(lower);
+    //             self.upper += cost2;
+    //         }
+    //         self.graph.un_merge(v1, v2, v_merge_2);
+    //     } else {
+    //         self.search_graph(lower)
+    //     }
+    // }
 
     pub fn search_cut(&mut self, v1: usize, v2: usize) {
         let edge = self.graph.cut(v1, v2);
         let lower = self.pack();
-        if lower + edge.weight < self.upper {
-            self.upper -= edge.weight;
+        if lower + max(0, edge.weight) < self.upper {
+            self.upper -= max(0, edge.weight);
             self.search_graph(lower);
-            self.upper += edge.weight;
+            self.upper += max(0, edge.weight);
         }
         self.graph.un_cut(v1, v2, edge);
     }
@@ -133,14 +133,15 @@ impl Solver {
                 self.search_merge(v1, v2);
                 self.search_cut(v1, v2)
             }
-            EdgeMod::Delete(v1, v2) => {
+            EdgeMod::Cut(v1, v2) => {
                 self.search_cut(v1, v2);
                 self.search_merge(v1, v2)
             }
             EdgeMod::Nothing => {
                 // println!("{}", upper);
                 self.best.clone_from(&self.graph);
-                self.best.check_easy();
+                assert_eq!(lower, self.max);
+                // self.best.check_easy();
                 self.upper = lower
             }
         }
