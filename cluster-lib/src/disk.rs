@@ -38,20 +38,26 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
         }
     }
 
-    graph.add_indirect_edges();
+    // graph.add_indirect_edges();
 
     Ok(graph)
 }
 
 impl Graph {
     fn add_indirect_edges(&mut self) {
-        for vertex1 in self.active.clone() {
-            for vertex2 in self.active.clone() {
-                if self[vertex1][vertex2].weight < 0
-                    && self.two_edges(vertex1, vertex2, 0).count() <= 1
-                {
-                    self[vertex1][vertex2] = Edge::none()
+        for v1 in self.active.clone() {
+            'l: for v2 in self.active.clone() {
+                if self[v1][v2].weight > 0 {
+                    continue;
                 }
+                for (j1, n1) in self.two_edges(v1, v2, 0) {
+                    for (_, n2) in self.two_edges(v1, v2, j1) {
+                        if self[n1][n2].weight > 0 {
+                            continue 'l;
+                        }
+                    }
+                }
+                self[v1][v2] = Edge::none()
             }
         }
     }

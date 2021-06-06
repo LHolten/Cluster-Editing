@@ -25,7 +25,8 @@ mod tests {
         ];
         // let instances_hard = vec![17, 39];
         let zero = vec![31, 41, 13];
-        for instance in zero {
+        let test = vec![35, 47];
+        for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let graph = load(File::open(&file_name).unwrap()).unwrap();
