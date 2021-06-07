@@ -21,11 +21,11 @@ mod tests {
     #[test]
     fn test() {
         let instances = vec![
-            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 49, 97, 113, 115, 137,
+            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 97, 113, 115, 137,
         ];
         // let instances_hard = vec![17, 39];
         let zero = vec![31, 41, 13];
-        let test = vec![35, 47];
+        let test = vec![35, 47, 49];
         for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
@@ -50,7 +50,7 @@ mod tests {
                 File::create(&out_file).unwrap(),
             )
             .unwrap();
-            // assert_eq!(solver.upper, count2);
+            assert_eq!(solver.upper, count2);
 
             assert_eq!(
                 std::str::from_utf8(

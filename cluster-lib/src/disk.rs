@@ -97,6 +97,17 @@ impl Graph {
     //         }
     //     }
     // }
+
+    pub fn check_uneven(&self) {
+        for (i1, v1) in self.all(0) {
+            for (_, v2) in self.all(i1) {
+                if self[v1][v2].weight % 2 == 0 {
+                    assert!(self[v1][v2].weight <= 0);
+                    assert!(self.two_edges(v1, v2, 0).count() == 0);
+                }
+            }
+        }
+    }
 }
 
 pub fn finish_solve(output: &mut Graph) {
