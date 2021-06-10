@@ -3,7 +3,7 @@ use std::{
     usize,
 };
 
-use crate::graph::{Edge, Graph};
+use crate::graph::{AllFrom, Edge, Graph};
 
 pub fn load<F: Read>(file: F) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
@@ -64,8 +64,8 @@ impl Graph {
 
     pub fn edge_count(&self) -> i32 {
         let mut total = 0;
-        for (i1, v1) in self.all(0) {
-            for (_, v2) in self.all(i1) {
+        for (i1, v1) in self.active.all(0) {
+            for (_, v2) in self.active.all(i1) {
                 total += (self[v1][v2].weight > 0) as i32
             }
         }
@@ -73,7 +73,7 @@ impl Graph {
     }
 
     pub fn check_easy(&self) {
-        for (i1, v1) in self.all(0) {
+        for (i1, v1) in self.active.all(0) {
             for (_, v2) in self.positive(v1, i1) {
                 let mut num = 0;
                 for _ in self.conflict_edges(v1, v2, 0) {
@@ -99,8 +99,8 @@ impl Graph {
     // }
 
     pub fn check_uneven(&self) {
-        for (i1, v1) in self.all(0) {
-            for (_, v2) in self.all(i1) {
+        for (i1, v1) in self.active.all(0) {
+            for (_, v2) in self.active.all(i1) {
                 if self[v1][v2].weight % 2 == 0 {
                     assert!(self[v1][v2].weight <= 0);
                     assert!(self.two_edges(v1, v2, 0).count() == 0);
@@ -112,7 +112,7 @@ impl Graph {
 
 pub fn finish_solve(output: &mut Graph) {
     let out = unsafe { &*(output as *const Graph) };
-    for (i1, v1) in out.all(0) {
+    for (i1, v1) in out.active.all(0) {
         for (i2, v2) in out.positive(v1, i1) {
             let edge_weight = output[v1][v2].weight;
             for (_, v3) in out.conflict_edges(v1, v2, i2) {
@@ -145,8 +145,8 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
-    for (i1, v1) in input.all(0) {
-        for (_, v2) in input.all(i1) {
+    for (i1, v1) in input.active.all(0) {
+        for (_, v2) in input.active.all(i1) {
             let edge = input[v1][v2].weight > 0;
             if edge != (output.root(v1) == output.root(v2)) {
                 writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
@@ -167,8 +167,8 @@ pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result
     //     output.edge_count()
     // )?;
 
-    for (i1, v1) in input.all(0) {
-        for (_, v2) in input.all(i1) {
+    for (i1, v1) in input.active.all(0) {
+        for (_, v2) in input.active.all(i1) {
             if output.root(v1) == output.root(v2) {
                 writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
             }

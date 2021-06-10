@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::search::Solver;
+use crate::{graph::AllFrom, search::Solver};
 
 pub enum EdgeMod {
     Merge(usize, usize),
@@ -16,15 +16,13 @@ impl Solver {
         let mut best = EdgeMod::Nothing;
         let mut best_cost = 0;
 
-        for (i1, v1) in self.graph.all(0) {
-            for (_, v2) in self.graph.all(i1) {
+        for (i1, v1) in self.graph.active.all(0) {
+            for (_, v2) in self.graph.active.all(i1) {
                 if self.graph[v1][v2].fixed {
                     continue;
                 }
-                let cost = self.graph[v1][v2].weight.abs()
-                    - self.edge_markers[v1][v2]
-                    - self.deletion[v1][v2];
-                if cost < best_cost {
+                let cost = self.graph[v1][v2].conflicts;
+                if cost > best_cost {
                     best_cost = cost;
                     if self.graph[v1][v2].weight > 0 {
                         best = EdgeMod::Cut(v1, v2)

@@ -1,16 +1,19 @@
-use crate::{graph::Graph, search::Solver};
+use crate::{
+    graph::{AllFrom, Graph},
+    search::Solver,
+};
 
 impl Solver {
     pub fn components(&mut self) -> Vec<Vec<usize>> {
         let mut components = Vec::new();
-        for (_, v) in self.graph.all(0) {
+        for (_, v) in self.graph.active.all(0) {
             if !self.vertex_markers[v] {
                 let mut component = Vec::new();
                 add_connected(&self.graph, v, &mut component, &mut self.vertex_markers);
                 components.push(component)
             }
         }
-        for (_, v) in self.graph.all(0) {
+        for (_, v) in self.graph.active.all(0) {
             self.vertex_markers[v] = false;
         }
         components

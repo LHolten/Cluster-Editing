@@ -1,13 +1,11 @@
 mod branch;
 mod component;
-mod critical;
 pub mod disk;
 pub mod graph;
-pub mod kernel;
 mod merge;
 mod packing;
 pub mod search;
-mod simplify;
+mod triple;
 
 #[cfg(test)]
 mod tests {
@@ -24,8 +22,8 @@ mod tests {
             1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 97, 113, 115, 137,
         ];
         // let instances_hard = vec![17, 39];
-        let zero = vec![31, 41, 13];
-        let test = vec![35, 47, 49];
+        // let zero = vec![31, 41, 13];
+        // let test = vec![35, 47, 49];
         for instance in instances {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
@@ -80,11 +78,10 @@ mod tests {
         // let mut bounds = Vec::new();
         for instance in (1..200).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
-            let graph = load(File::open(file_name).unwrap()).unwrap();
-            let mut solver = Solver::new(graph);
+            let mut graph = load(File::open(file_name).unwrap()).unwrap();
             // critical(&mut graph);
-            let lower = solver.pack();
-            println!("{:03} {}", instance, lower);
+            graph.pack();
+            println!("{:03} {}", instance, graph.lower);
             // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
             // println!("{:.1}%", 100. * lower as f32 / actual as f32);
             // bounds.push((lower, actual));
