@@ -31,8 +31,7 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
             Some(word) => {
                 let v1 = word.parse::<usize>().unwrap() - 1;
                 let v2 = words.next().unwrap().parse::<usize>().unwrap() - 1;
-                graph[v1][v2].weight = 1;
-                graph[v2][v1].weight = 1;
+                graph[[v1, v2]].weight = 1;
             }
             None => return Err(io::ErrorKind::InvalidInput.into()),
         }
@@ -47,17 +46,17 @@ impl Graph {
     fn add_indirect_edges(&mut self) {
         for v1 in self.active.clone() {
             'l: for v2 in self.active.clone() {
-                if self[v1][v2].weight > 0 {
+                if self[[v1, v2]].weight > 0 {
                     continue;
                 }
                 for (j1, n1) in self.two_edges(v1, v2, 0) {
                     for (_, n2) in self.two_edges(v1, v2, j1) {
-                        if self[n1][n2].weight > 0 {
+                        if self[[n1, n2]].weight > 0 {
                             continue 'l;
                         }
                     }
                 }
-                self[v1][v2] = Edge::none()
+                self[[v1, v2]] = Edge::none()
             }
         }
     }
@@ -66,7 +65,7 @@ impl Graph {
         let mut total = 0;
         for (i1, v1) in self.active.all(0) {
             for (_, v2) in self.active.all(i1) {
-                total += (self[v1][v2].weight > 0) as i32
+                total += (self[[v1, v2]].weight > 0) as i32
             }
         }
         total
@@ -79,6 +78,7 @@ impl Graph {
                 for _ in self.conflict_edges(v1, v2, 0) {
                     num += 1;
                 }
+                assert_eq!(num - 2, self[[v1, v2]].conflicts);
                 assert!(num <= 3);
             }
         }
@@ -101,8 +101,8 @@ impl Graph {
     pub fn check_uneven(&self) {
         for (i1, v1) in self.active.all(0) {
             for (_, v2) in self.active.all(i1) {
-                if self[v1][v2].weight % 2 == 0 {
-                    assert!(self[v1][v2].weight <= 0);
+                if self[[v1, v2]].weight % 2 == 0 {
+                    assert!(self[[v1, v2]].weight <= 0);
                     assert!(self.two_edges(v1, v2, 0).count() == 0);
                 }
             }
@@ -114,9 +114,9 @@ pub fn finish_solve(output: &mut Graph) {
     let out = unsafe { &*(output as *const Graph) };
     for (i1, v1) in out.active.all(0) {
         for (i2, v2) in out.positive(v1, i1) {
-            let edge_weight = output[v1][v2].weight;
+            let edge_weight = output[[v1, v2]].weight;
             for (_, v3) in out.conflict_edges(v1, v2, i2) {
-                let (edge1, edge2) = (output[v1][v3], output[v2][v3]);
+                let (edge1, edge2) = (output[[v1, v3]], output[[v2, v3]]);
                 if edge_weight <= edge1.weight.abs() && edge_weight <= edge2.weight.abs() {
                     output.cut(v1, v2);
                 } else if edge1.weight > 0 {
@@ -131,7 +131,7 @@ pub fn finish_solve(output: &mut Graph) {
     }
 
     for mut v1 in output.active.clone() {
-        if output[v1].merged.is_some() {
+        if output.vertices[v1].merged.is_some() {
             continue;
         }
         for (_, v2) in output.positive(v1, 0).collect::<Vec<_>>() {
@@ -147,7 +147,7 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     let mut count = 0;
     for (i1, v1) in input.active.all(0) {
         for (_, v2) in input.active.all(i1) {
-            let edge = input[v1][v2].weight > 0;
+            let edge = input[[v1, v2]].weight > 0;
             if edge != (output.root(v1) == output.root(v2)) {
                 writeln!(&mut writer, "{} {}", v1 + 1, v2 + 1)?;
                 count += 1;

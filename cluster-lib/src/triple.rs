@@ -11,12 +11,12 @@ impl Triple {
         Self { vertices, cost }
     }
 
-    pub fn edge(&self, v1: usize, v2: usize) -> bool {
-        debug_assert!(v1 < v2);
-        let e11 = v1 == self.vertices[0];
-        let e12 = v1 == self.vertices[1];
-        let e22 = v2 == self.vertices[1];
-        let e23 = v2 == self.vertices[2];
+    pub fn edge(&self, mut vertices: [usize; 2]) -> bool {
+        vertices.sort_unstable();
+        let e11 = vertices[0] == self.vertices[0];
+        let e12 = vertices[0] == self.vertices[1];
+        let e22 = vertices[1] == self.vertices[1];
+        let e23 = vertices[1] == self.vertices[2];
         (e11 | e12) & (e22 | e23)
     }
 

@@ -48,8 +48,7 @@ impl Solver {
 
             for v1 in out_clusters.iter().copied() {
                 for v2 in self.best.active.iter().copied() {
-                    self.best.data.vertices[v1][v2] = Edge::none();
-                    self.best.data.vertices[v2][v1] = Edge::none();
+                    self.best.data[[v1, v2]] = Edge::none();
                 }
             }
             out_clusters.extend(take(&mut self.best.active));

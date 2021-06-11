@@ -6,6 +6,7 @@ use crate::triple::Triple;
 #[derive(Debug)]
 pub struct GraphData {
     pub vertices: Vec<Vertex>,
+    pub edges: Vec<Edge>,
     pub triples: Vec<Triple>,
     pub lower: i32,
 }
@@ -28,7 +29,7 @@ impl PartialEq for Graph {
         }
         for (i1, v1) in self.active.all(0) {
             for (_, v2) in self.active.all(i1) {
-                if self[v1][v2] != other[v1][v2] {
+                if self[[v1, v2]] != other[[v1, v2]] {
                     return false;
                 }
             }
@@ -42,6 +43,7 @@ impl Clone for Graph {
         Self {
             data: GraphData {
                 vertices: self.vertices.clone(),
+                edges: self.edges.clone(),
                 triples: self.triples.clone(),
                 lower: self.lower,
             },
@@ -51,7 +53,8 @@ impl Clone for Graph {
     }
 
     fn clone_from(&mut self, source: &Self) {
-        self.vertices.clone_from_slice(&source.vertices);
+        self.vertices.copy_from_slice(&source.vertices);
+        self.edges.copy_from_slice(&source.edges);
         self.active.clone_from(&source.active);
         self.len = source.len;
         // triples is not cloned
@@ -59,37 +62,9 @@ impl Clone for Graph {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct Vertex {
-    pub size: i32,
     pub merged: Option<usize>,
-    pub edges: Vec<Edge>,
-}
-
-impl Clone for Vertex {
-    fn clone(&self) -> Self {
-        Self {
-            size: self.size,
-            merged: self.merged,
-            edges: self.edges.clone(),
-        }
-    }
-
-    fn clone_from(&mut self, source: &Self) {
-        self.size = source.size;
-        self.merged = source.merged;
-        self.edges.copy_from_slice(&source.edges);
-    }
-}
-
-impl Vertex {
-    pub fn new(size: usize) -> Self {
-        Self {
-            size: 1,
-            merged: None,
-            edges: vec![Edge::new(-1); size * 2],
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,7 +99,8 @@ impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
             data: GraphData {
-                vertices: vec![Vertex::new(size); size * 2],
+                vertices: vec![Vertex::default(); size * 2],
+                edges: vec![Edge::new(-1); size * 2 * size * 2],
                 triples: vec![],
                 lower: 0,
             },
@@ -136,32 +112,24 @@ impl Graph {
     pub fn positive(&self, v1: usize, from: usize) -> impl '_ + Iterator<Item = (usize, usize)> {
         self.active
             .all(from)
-            .filter(move |&(_, v2)| self[v1][v2].weight > 0)
+            .filter(move |&(_, v2)| self[[v1, v2]].weight > 0)
     }
 
     pub fn cut(&mut self, v1: usize, v2: usize) -> Edge {
-        self.data.remove_edge(v1, v2, self.active.all(0));
-        let edge = replace(&mut self[v1][v2], Edge::none());
-        self[v2][v1] = Edge::none();
-        self.data.add_edge(v1, v2, self.active.all(0));
-        debug_assert_eq!(
-            self[v1][v2].conflicts,
-            self.two_edges(v1, v2, 0)
-                .filter(|&(_, v)| v != v1 && v != v2)
-                .count() as i32
-        );
+        self.data.remove_edge(v1, v2, &self.active);
+        let edge = replace(&mut self[[v1, v2]], Edge::none());
+        self.data.add_edge(v1, v2, &self.active);
         edge
     }
 
     pub fn un_cut(&mut self, v1: usize, v2: usize, edge: Edge) {
-        self.data.remove_edge(v1, v2, self.active.all(0));
-        self[v1][v2] = edge;
-        self[v2][v1] = edge;
-        self.data.add_edge(v1, v2, self.active.all(0));
+        self.data.remove_edge(v1, v2, &self.active);
+        self[[v1, v2]] = edge;
+        self.data.add_edge(v1, v2, &self.active);
     }
 
     pub fn root(&self, index: usize) -> usize {
-        if let Some(new_index) = self[index].merged {
+        if let Some(new_index) = self.vertices[index].merged {
             self.root(new_index)
         } else {
             index
@@ -183,38 +151,28 @@ impl DerefMut for Graph {
     }
 }
 
-impl Index<usize> for GraphData {
-    type Output = Vertex;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        unsafe { self.vertices.get_unchecked(index) }
-    }
-}
-
-impl IndexMut<usize> for GraphData {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        unsafe { self.vertices.get_unchecked_mut(index) }
-    }
-}
-
-impl Index<usize> for Vertex {
+impl Index<[usize; 2]> for GraphData {
     type Output = Edge;
 
-    fn index(&self, index: usize) -> &Self::Output {
-        unsafe { self.edges.get_unchecked(index) }
+    fn index(&self, mut index: [usize; 2]) -> &Self::Output {
+        index.sort_unstable();
+        let size = self.vertices.len();
+        unsafe { self.edges.get_unchecked(index[0] * size + index[1]) }
     }
 }
 
-impl IndexMut<usize> for Vertex {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        unsafe { self.edges.get_unchecked_mut(index) }
+impl IndexMut<[usize; 2]> for GraphData {
+    fn index_mut(&mut self, mut index: [usize; 2]) -> &mut Self::Output {
+        index.sort_unstable();
+        let size = self.vertices.len();
+        unsafe { self.edges.get_unchecked_mut(index[0] * size + index[1]) }
     }
 }
 
 #[derive(Clone, Copy)]
 pub struct Active<'a> {
     from: usize,
-    active: &'a Vec<usize>,
+    active: &'a [usize],
 }
 
 impl<'a> Iterator for Active<'a> {
@@ -232,7 +190,7 @@ pub trait AllFrom {
     fn all(self, from: usize) -> Self::Iter;
 }
 
-impl<'a> AllFrom for &'a Vec<usize> {
+impl<'a> AllFrom for &'a [usize] {
     type Iter = Active<'a>;
 
     fn all(self, from: usize) -> Self::Iter {

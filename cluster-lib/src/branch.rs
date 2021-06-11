@@ -18,13 +18,13 @@ impl Solver {
 
         for (i1, v1) in self.graph.active.all(0) {
             for (_, v2) in self.graph.active.all(i1) {
-                if self.graph[v1][v2].fixed {
+                if self.graph[[v1, v2]].fixed {
                     continue;
                 }
-                let cost = self.graph[v1][v2].conflicts;
+                let cost = self.graph[[v1, v2]].conflicts;
                 if cost > best_cost {
                     best_cost = cost;
-                    if self.graph[v1][v2].weight > 0 {
+                    if self.graph[[v1, v2]].weight > 0 {
                         best = EdgeMod::Cut(v1, v2)
                     } else {
                         best = EdgeMod::Merge(v1, v2)
