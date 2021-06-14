@@ -47,6 +47,7 @@ impl Solver {
 
             self.packing.pack(&self.graph);
             self.search_graph();
+            self.packing = Packing::new(self.graph.vertices.len());
             total += self.upper;
 
             for v1 in out_clusters.iter().copied() {

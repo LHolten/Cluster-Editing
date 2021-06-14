@@ -12,7 +12,8 @@ fn exact_track(c: &mut Criterion) {
     let mut group = c.benchmark_group("exact");
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(10);
-    for instance in (1..=11).step_by(2) {
+    let instances = vec![31, 35, 41, 47];
+    for instance in instances {
         let input = load(File::open(format!("../exact/exact{:03}.gr", instance)).unwrap()).unwrap();
         let solver = Solver::new(input);
         group.bench_with_input(BenchmarkId::from_parameter(instance), &solver, |b, g| {
