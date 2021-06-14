@@ -47,7 +47,6 @@ impl Solver {
 
             self.packing.pack(&self.graph);
             self.search_graph();
-            self.packing = Packing::new(self.graph.vertices.len());
             total += self.upper;
 
             for v1 in out_clusters.iter().copied() {
@@ -69,6 +68,10 @@ impl Solver {
         self.packing.remove_vertex_pair(&self.graph, v1, v2);
         let (vv, cost) = self.graph.merge(v1, v2);
         self.packing.add_vertex(&self.graph, vv);
+
+        if cfg!(not(feature = "incremental")) {
+            self.packing.pack(&self.graph)
+        }
         if self.packing.lower + (cost as u32) < self.upper {
             self.upper -= cost;
             self.search_graph();
@@ -84,6 +87,10 @@ impl Solver {
         let edge = self.graph.cut(v1, v2);
         self.packing.add_edge(&self.graph, v1, v2);
         let cost = max(0, edge.weight) as u32;
+
+        if cfg!(not(feature = "incremental")) {
+            self.packing.pack(&self.graph)
+        }
         if self.packing.lower + cost < self.upper {
             self.upper -= cost;
             self.search_graph();

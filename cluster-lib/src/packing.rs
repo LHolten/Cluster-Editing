@@ -25,6 +25,15 @@ impl Packing {
     }
 
     pub fn pack(&mut self, graph: &Graph) {
+        self.triples.clear();
+        self.lower = 0;
+        for (i1, v1) in graph.active.all(0) {
+            for (_, v2) in graph.active.all(i1) {
+                self.edge_conflicts[[v1, v2]] = 0;
+                self.edge_cost[[v1, v2]] = 0;
+            }
+        }
+
         for (i1, v1) in graph.active.all(0) {
             for (i2, v2) in graph.active.all(i1) {
                 for (_, v3) in graph.active.all(i2) {
@@ -35,6 +44,9 @@ impl Packing {
     }
 
     pub fn add_vertex(&mut self, graph: &Graph, v1: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for (i2, v2) in graph.active.all(0) {
             if v1 != v2 {
                 for (_, v3) in graph.active.all(i2) {
@@ -47,6 +59,9 @@ impl Packing {
     }
 
     pub fn remove_vertex(&mut self, graph: &Graph, v1: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].vertex(v1) {
                 let triple = self.triples.swap_remove(i);
@@ -66,6 +81,9 @@ impl Packing {
     }
 
     pub fn add_vertex_pair(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for (i3, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
                 for (_, v4) in graph.active.all(i3) {
@@ -81,6 +99,9 @@ impl Packing {
     }
 
     pub fn remove_vertex_pair(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].vertex(v1) || self.triples[i].vertex(v2) {
                 let triple = self.triples.swap_remove(i);
@@ -103,6 +124,9 @@ impl Packing {
     }
 
     pub fn add_edge(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for (_, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
                 self.add_triple(graph, v1, v2, v3);
@@ -111,6 +135,9 @@ impl Packing {
     }
 
     pub fn remove_edge(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        if cfg!(not(feature = "incremental")) {
+            return;
+        }
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].edge([v1, v2]) {
                 let triple = self.triples.swap_remove(i);
