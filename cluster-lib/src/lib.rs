@@ -2,6 +2,7 @@ mod branch;
 mod component;
 pub mod disk;
 pub mod graph;
+mod matrix;
 mod merge;
 mod packing;
 pub mod search;
@@ -78,10 +79,10 @@ mod tests {
         // let mut bounds = Vec::new();
         for instance in (1..200).step_by(2) {
             let file_name = format!("../exact/exact{:03}.gr", instance);
-            let mut graph = load(File::open(file_name).unwrap()).unwrap();
+            let graph = load(File::open(file_name).unwrap()).unwrap();
+            let solver = Solver::new(graph);
             // critical(&mut graph);
-            graph.pack();
-            println!("{:03} {}", instance, graph.lower);
+            println!("{:03} {}", instance, solver.packing.lower);
             // let actual = search_components(&mut graph, i32::MAX, &mut Graph::new(0));
             // println!("{:.1}%", 100. * lower as f32 / actual as f32);
             // bounds.push((lower, actual));

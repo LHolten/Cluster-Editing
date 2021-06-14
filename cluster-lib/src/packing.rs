@@ -1,36 +1,52 @@
 use std::cmp::min;
 
 use crate::{
-    graph::{AllFrom, Graph, GraphData},
+    graph::{AllFrom, Graph},
+    matrix::Matrix,
     triple::Triple,
 };
 
-impl Graph {
-    pub fn pack(&mut self) {
-        for (i1, v1) in self.active.all(0) {
-            for (i2, v2) in self.active.all(i1) {
-                for (_, v3) in self.active.all(i2) {
-                    self.data.add_triple(v1, v2, v3);
+#[derive(Clone)]
+pub struct Packing {
+    pub triples: Vec<Triple>,
+    pub edge_conflicts: Matrix<u32>,
+    pub edge_cost: Matrix<u32>,
+    pub lower: u32,
+}
+
+impl Packing {
+    pub fn new(len: usize) -> Self {
+        Self {
+            triples: vec![],
+            edge_conflicts: Matrix::new(0, len),
+            edge_cost: Matrix::new(0, len),
+            lower: 0,
+        }
+    }
+
+    pub fn pack(&mut self, graph: &Graph) {
+        for (i1, v1) in graph.active.all(0) {
+            for (i2, v2) in graph.active.all(i1) {
+                for (_, v3) in graph.active.all(i2) {
+                    self.add_triple(graph, v1, v2, v3);
                 }
             }
         }
     }
-}
 
-impl GraphData {
-    pub fn add_vertex(&mut self, v1: usize, active: &[usize]) {
-        for (i2, v2) in active.all(0) {
+    pub fn add_vertex(&mut self, graph: &Graph, v1: usize) {
+        for (i2, v2) in graph.active.all(0) {
             if v1 != v2 {
-                for (_, v3) in active.all(i2) {
+                for (_, v3) in graph.active.all(i2) {
                     if v3 != v1 {
-                        self.add_triple(v1, v2, v3);
+                        self.add_triple(graph, v1, v2, v3);
                     }
                 }
             }
         }
     }
 
-    pub fn remove_vertex(&mut self, v1: usize, active: &[usize]) {
+    pub fn remove_vertex(&mut self, graph: &Graph, v1: usize) {
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].vertex(v1) {
                 let triple = self.triples.swap_remove(i);
@@ -38,33 +54,33 @@ impl GraphData {
             }
         }
 
-        for (i2, v2) in active.all(0) {
+        for (i2, v2) in graph.active.all(0) {
             if v2 != v1 {
-                for (_, v3) in active.all(i2) {
+                for (_, v3) in graph.active.all(i2) {
                     if v3 != v1 {
-                        self.remove_triple_conflicts(v1, v2, v3);
+                        self.remove_triple_conflicts(graph, v1, v2, v3);
                     }
                 }
             }
         }
     }
 
-    pub fn add_vertex_pair(&mut self, v1: usize, v2: usize, active: &[usize]) {
-        for (i3, v3) in active.all(0) {
+    pub fn add_vertex_pair(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        for (i3, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
-                for (_, v4) in active.all(i3) {
+                for (_, v4) in graph.active.all(i3) {
                     if v4 != v1 && v4 != v2 {
-                        self.add_triple(v1, v3, v4);
-                        self.add_triple(v2, v3, v4);
+                        self.add_triple(graph, v1, v3, v4);
+                        self.add_triple(graph, v2, v3, v4);
                     }
                 }
             }
         }
 
-        self.add_edge(v1, v2, active);
+        self.add_edge(graph, v1, v2);
     }
 
-    pub fn remove_vertex_pair(&mut self, v1: usize, v2: usize, active: &[usize]) {
+    pub fn remove_vertex_pair(&mut self, graph: &Graph, v1: usize, v2: usize) {
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].vertex(v1) || self.triples[i].vertex(v2) {
                 let triple = self.triples.swap_remove(i);
@@ -72,29 +88,29 @@ impl GraphData {
             }
         }
 
-        for (i3, v3) in active.all(0) {
+        for (i3, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
-                for (_, v4) in active.all(i3) {
+                for (_, v4) in graph.active.all(i3) {
                     if v4 != v1 && v4 != v2 {
-                        self.remove_triple_conflicts(v1, v3, v4);
-                        self.remove_triple_conflicts(v2, v3, v4);
+                        self.remove_triple_conflicts(graph, v1, v3, v4);
+                        self.remove_triple_conflicts(graph, v2, v3, v4);
                     }
                 }
             }
         }
 
-        self.remove_edge_conflicts(v1, v2, active)
+        self.remove_edge_conflicts(graph, v1, v2)
     }
 
-    pub fn add_edge(&mut self, v1: usize, v2: usize, active: &[usize]) {
-        for (_, v3) in active.all(0) {
+    pub fn add_edge(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        for (_, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
-                self.add_triple(v1, v2, v3);
+                self.add_triple(graph, v1, v2, v3);
             }
         }
     }
 
-    pub fn remove_edge(&mut self, v1: usize, v2: usize, active: &[usize]) {
+    pub fn remove_edge(&mut self, graph: &Graph, v1: usize, v2: usize) {
         for i in (0..self.triples.len()).rev() {
             if self.triples[i].edge([v1, v2]) {
                 let triple = self.triples.swap_remove(i);
@@ -102,60 +118,66 @@ impl GraphData {
             }
         }
 
-        self.remove_edge_conflicts(v1, v2, active)
+        self.remove_edge_conflicts(graph, v1, v2)
     }
 
-    pub fn remove_edge_conflicts(&mut self, v1: usize, v2: usize, active: &[usize]) {
-        for (_, v3) in active.all(0) {
+    pub fn remove_edge_conflicts(&mut self, graph: &Graph, v1: usize, v2: usize) {
+        for (_, v3) in graph.active.all(0) {
             if v1 != v3 && v2 != v3 {
-                self.remove_triple_conflicts(v1, v2, v3);
+                self.remove_triple_conflicts(graph, v1, v2, v3);
             }
         }
     }
 
-    pub fn add_triple(&mut self, v1: usize, v2: usize, v3: usize) {
-        let e12 = self[[v1, v3]].weight > 0;
-        let e13 = self[[v2, v3]].weight > 0;
-        let e23 = self[[v1, v2]].weight > 0;
+    pub fn add_triple(&mut self, graph: &Graph, v1: usize, v2: usize, v3: usize) {
+        let e12 = graph[[v1, v3]].weight > 0;
+        let e13 = graph[[v2, v3]].weight > 0;
+        let e23 = graph[[v1, v2]].weight > 0;
         if e12 as i32 + e13 as i32 + e23 as i32 != 2 {
             return;
         }
-        self[[v1, v3]].conflicts += 1;
-        self[[v2, v3]].conflicts += 1;
-        self[[v1, v2]].conflicts += 1;
+        self.edge_conflicts[[v1, v3]] += 1;
+        self.edge_conflicts[[v2, v3]] += 1;
+        self.edge_conflicts[[v1, v2]] += 1;
 
-        if self[[v1, v2]].marked == 0 || self[[v1, v3]].marked == 0 || self[[v2, v3]].marked == 0 {
+        if self.edge_cost[[v1, v2]] == graph[[v1, v2]].weight.abs() as u32
+            || self.edge_cost[[v1, v3]] == graph[[v1, v3]].weight.abs() as u32
+            || self.edge_cost[[v2, v3]] == graph[[v2, v3]].weight.abs() as u32
+        {
             return;
         }
 
         let cost = min(
-            self[[v1, v2]].marked,
-            min(self[[v1, v3]].marked, self[[v2, v3]].marked),
+            graph[[v1, v2]].weight.abs() as u32 - self.edge_cost[[v1, v2]],
+            min(
+                graph[[v1, v3]].weight.abs() as u32 - self.edge_cost[[v1, v3]],
+                graph[[v2, v3]].weight.abs() as u32 - self.edge_cost[[v2, v3]],
+            ),
         );
-        self[[v1, v3]].marked -= cost;
-        self[[v2, v3]].marked -= cost;
-        self[[v1, v2]].marked -= cost;
+        self.edge_cost[[v1, v3]] += cost;
+        self.edge_cost[[v2, v3]] += cost;
+        self.edge_cost[[v1, v2]] += cost;
         self.triples.push(Triple::new([v1, v2, v3], cost));
         self.lower += cost;
     }
 
-    pub fn remove_triple_conflicts(&mut self, v1: usize, v2: usize, v3: usize) {
-        let e12 = self[[v1, v3]].weight > 0;
-        let e13 = self[[v2, v3]].weight > 0;
-        let e23 = self[[v1, v2]].weight > 0;
+    pub fn remove_triple_conflicts(&mut self, graph: &Graph, v1: usize, v2: usize, v3: usize) {
+        let e12 = graph[[v1, v3]].weight > 0;
+        let e13 = graph[[v2, v3]].weight > 0;
+        let e23 = graph[[v1, v2]].weight > 0;
         if e12 as i32 + e13 as i32 + e23 as i32 != 2 {
             return;
         }
-        self[[v1, v3]].conflicts -= 1;
-        self[[v2, v3]].conflicts -= 1;
-        self[[v1, v2]].conflicts -= 1;
+        self.edge_conflicts[[v1, v3]] -= 1;
+        self.edge_conflicts[[v2, v3]] -= 1;
+        self.edge_conflicts[[v1, v2]] -= 1;
     }
 
     pub fn remove_triple_cost(&mut self, triple: Triple) {
         let [v1, v2, v3] = triple.vertices;
-        self[[v1, v3]].marked += triple.cost;
-        self[[v2, v3]].marked += triple.cost;
-        self[[v1, v2]].marked += triple.cost;
+        self.edge_cost[[v1, v3]] -= triple.cost;
+        self.edge_cost[[v2, v3]] -= triple.cost;
+        self.edge_cost[[v1, v2]] -= triple.cost;
         self.lower -= triple.cost;
     }
 }

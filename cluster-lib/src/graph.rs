@@ -1,19 +1,14 @@
-use std::mem::replace;
-use std::ops::{Deref, DerefMut, Index, IndexMut};
+use std::{
+    mem::replace,
+    ops::{Deref, DerefMut},
+};
 
-use crate::triple::Triple;
-
-#[derive(Debug)]
-pub struct GraphData {
-    pub vertices: Vec<Vertex>,
-    pub edges: Vec<Edge>,
-    pub triples: Vec<Triple>,
-    pub lower: i32,
-}
+use crate::matrix::Matrix;
 
 #[derive(Debug)]
 pub struct Graph {
-    pub data: GraphData,
+    pub vertices: Vec<Vertex>,
+    pub edges: Matrix<Edge>,
     pub active: Vec<usize>,
     pub len: usize,
 }
@@ -41,12 +36,8 @@ impl PartialEq for Graph {
 impl Clone for Graph {
     fn clone(&self) -> Self {
         Self {
-            data: GraphData {
-                vertices: self.vertices.clone(),
-                edges: self.edges.clone(),
-                triples: self.triples.clone(),
-                lower: self.lower,
-            },
+            vertices: self.vertices.clone(),
+            edges: self.edges.clone(),
             active: self.active.clone(),
             len: self.len,
         }
@@ -54,11 +45,9 @@ impl Clone for Graph {
 
     fn clone_from(&mut self, source: &Self) {
         self.vertices.copy_from_slice(&source.vertices);
-        self.edges.copy_from_slice(&source.edges);
+        self.edges.clone_from(&source.edges);
         self.active.clone_from(&source.active);
         self.len = source.len;
-        // triples is not cloned
-        self.lower = source.lower;
     }
 }
 
@@ -71,8 +60,6 @@ pub struct Vertex {
 pub struct Edge {
     pub weight: i32,
     pub fixed: bool,
-    pub marked: i32,
-    pub conflicts: i32,
 }
 
 impl Edge {
@@ -80,8 +67,6 @@ impl Edge {
         Self {
             weight,
             fixed: false,
-            marked: weight.abs(),
-            conflicts: 0,
         }
     }
 
@@ -89,8 +74,6 @@ impl Edge {
         Self {
             weight: -i32::MAX,
             fixed: true,
-            marked: i32::MAX,
-            conflicts: 0,
         }
     }
 }
@@ -98,12 +81,8 @@ impl Edge {
 impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
-            data: GraphData {
-                vertices: vec![Vertex::default(); size * 2],
-                edges: vec![Edge::new(-1); size * 2 * size * 2],
-                triples: vec![],
-                lower: 0,
-            },
+            vertices: vec![Vertex::default(); size * 2],
+            edges: Matrix::new(Edge::new(-1), size * 2),
             active: (0..size).collect(),
             len: size,
         }
@@ -116,16 +95,11 @@ impl Graph {
     }
 
     pub fn cut(&mut self, v1: usize, v2: usize) -> Edge {
-        self.data.remove_edge(v1, v2, &self.active);
-        let edge = replace(&mut self[[v1, v2]], Edge::none());
-        self.data.add_edge(v1, v2, &self.active);
-        edge
+        replace(&mut self[[v1, v2]], Edge::none())
     }
 
     pub fn un_cut(&mut self, v1: usize, v2: usize, edge: Edge) {
-        self.data.remove_edge(v1, v2, &self.active);
         self[[v1, v2]] = edge;
-        self.data.add_edge(v1, v2, &self.active);
     }
 
     pub fn root(&self, index: usize) -> usize {
@@ -138,34 +112,16 @@ impl Graph {
 }
 
 impl Deref for Graph {
-    type Target = GraphData;
+    type Target = Matrix<Edge>;
 
     fn deref(&self) -> &Self::Target {
-        &self.data
+        &self.edges
     }
 }
 
 impl DerefMut for Graph {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
-    }
-}
-
-impl Index<[usize; 2]> for GraphData {
-    type Output = Edge;
-
-    fn index(&self, mut index: [usize; 2]) -> &Self::Output {
-        index.sort_unstable();
-        let size = self.vertices.len();
-        unsafe { self.edges.get_unchecked(index[0] * size + index[1]) }
-    }
-}
-
-impl IndexMut<[usize; 2]> for GraphData {
-    fn index_mut(&mut self, mut index: [usize; 2]) -> &mut Self::Output {
-        index.sort_unstable();
-        let size = self.vertices.len();
-        unsafe { self.edges.get_unchecked_mut(index[0] * size + index[1]) }
+        &mut self.edges
     }
 }
 

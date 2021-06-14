@@ -21,7 +21,7 @@ impl Solver {
                 if self.graph[[v1, v2]].fixed {
                     continue;
                 }
-                let cost = self.graph[[v1, v2]].conflicts;
+                let cost = self.packing.edge_conflicts[[v1, v2]];
                 if cost > best_cost {
                     best_cost = cost;
                     if self.graph[[v1, v2]].weight > 0 {

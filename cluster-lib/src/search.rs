@@ -6,12 +6,14 @@ use std::{
 use crate::{
     branch::EdgeMod,
     graph::{Edge, Graph},
+    packing::Packing,
 };
 
 #[derive(Clone)]
 pub struct Solver {
     pub graph: Graph,
-    pub upper: i32,
+    pub packing: Packing,
+    pub upper: u32,
     pub best: Graph,
     pub vertex_markers: Vec<bool>,
 }
@@ -21,7 +23,8 @@ impl Solver {
         let len = graph.vertices.len();
         Self {
             graph: graph.clone(),
-            upper: i32::MAX,
+            packing: Packing::new(len),
+            upper: u32::MAX,
             best: graph,
             vertex_markers: vec![false; len],
         }
@@ -40,15 +43,15 @@ impl Solver {
 
             let edges = self.graph.edge_count();
             let max_edges = (self.graph.active.len() * (self.graph.active.len() - 1)) / 2;
-            self.upper = min(edges, max_edges as i32 - edges) + 1;
+            self.upper = min(edges, max_edges as u32 - edges) + 1;
 
-            self.graph.pack();
+            self.packing.pack(&self.graph);
             self.search_graph();
             total += self.upper;
 
             for v1 in out_clusters.iter().copied() {
                 for v2 in self.best.active.iter().copied() {
-                    self.best.data[[v1, v2]] = Edge::none();
+                    self.best.edges[[v1, v2]] = Edge::none();
                 }
             }
             out_clusters.extend(take(&mut self.best.active));
@@ -62,23 +65,32 @@ impl Solver {
     }
 
     pub fn search_merge(&mut self, v1: usize, v2: usize) {
+        self.packing.remove_vertex_pair(&self.graph, v1, v2);
         let (vv, cost) = self.graph.merge(v1, v2);
-        if self.graph.lower + cost < self.upper {
+        self.packing.add_vertex(&self.graph, vv);
+        if self.packing.lower + (cost as u32) < self.upper {
             self.upper -= cost;
             self.search_graph();
             self.upper += cost;
         }
+        self.packing.remove_vertex(&self.graph, vv);
         self.graph.un_merge(v1, v2, vv);
+        self.packing.add_vertex_pair(&self.graph, v1, v2);
     }
 
     pub fn search_cut(&mut self, v1: usize, v2: usize) {
+        self.packing.remove_edge(&self.graph, v1, v2);
         let edge = self.graph.cut(v1, v2);
-        if self.graph.lower + max(0, edge.weight) < self.upper {
-            self.upper -= max(0, edge.weight);
+        self.packing.add_edge(&self.graph, v1, v2);
+        let cost = max(0, edge.weight) as u32;
+        if self.packing.lower + cost < self.upper {
+            self.upper -= cost;
             self.search_graph();
-            self.upper += max(0, edge.weight);
+            self.upper += cost;
         }
+        self.packing.remove_edge(&self.graph, v1, v2);
         self.graph.un_cut(v1, v2, edge);
+        self.packing.add_edge(&self.graph, v1, v2);
     }
 
     pub fn search_graph(&mut self) {
@@ -95,7 +107,7 @@ impl Solver {
                 // println!("{}", upper);
                 self.best.clone_from(&self.graph);
                 self.best.check_easy();
-                self.upper = self.best.lower
+                self.upper = self.packing.lower
             }
         }
     }

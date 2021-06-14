@@ -1,13 +1,12 @@
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Triple {
     pub vertices: [usize; 3],
-    pub cost: i32,
+    pub cost: u32,
 }
 
 impl Triple {
-    pub fn new(mut vertices: [usize; 3], cost: i32) -> Self {
+    pub fn new(mut vertices: [usize; 3], cost: u32) -> Self {
         vertices.sort_unstable();
-        debug_assert!(cost > 0);
         Self { vertices, cost }
     }
 

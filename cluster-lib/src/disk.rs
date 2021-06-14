@@ -3,7 +3,7 @@ use std::{
     usize,
 };
 
-use crate::graph::{AllFrom, Edge, Graph};
+use crate::graph::{AllFrom, Graph};
 
 pub fn load<F: Read>(file: F) -> io::Result<Graph> {
     let mut reader = BufReader::new(file);
@@ -43,29 +43,29 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
 }
 
 impl Graph {
-    fn add_indirect_edges(&mut self) {
-        for v1 in self.active.clone() {
-            'l: for v2 in self.active.clone() {
-                if self[[v1, v2]].weight > 0 {
-                    continue;
-                }
-                for (j1, n1) in self.two_edges(v1, v2, 0) {
-                    for (_, n2) in self.two_edges(v1, v2, j1) {
-                        if self[[n1, n2]].weight > 0 {
-                            continue 'l;
-                        }
-                    }
-                }
-                self[[v1, v2]] = Edge::none()
-            }
-        }
-    }
+    // fn add_indirect_edges(&mut self) {
+    //     for v1 in self.active.clone() {
+    //         'l: for v2 in self.active.clone() {
+    //             if self[[v1, v2]].weight > 0 {
+    //                 continue;
+    //             }
+    //             for (j1, n1) in self.two_edges(v1, v2, 0) {
+    //                 for (_, n2) in self.two_edges(v1, v2, j1) {
+    //                     if self[[n1, n2]].weight > 0 {
+    //                         continue 'l;
+    //                     }
+    //                 }
+    //             }
+    //             self[[v1, v2]] = Edge::none()
+    //         }
+    //     }
+    // }
 
-    pub fn edge_count(&self) -> i32 {
+    pub fn edge_count(&self) -> u32 {
         let mut total = 0;
         for (i1, v1) in self.active.all(0) {
             for (_, v2) in self.active.all(i1) {
-                total += (self[[v1, v2]].weight > 0) as i32
+                total += (self[[v1, v2]].weight > 0) as u32
             }
         }
         total
@@ -78,7 +78,6 @@ impl Graph {
                 for _ in self.conflict_edges(v1, v2, 0) {
                     num += 1;
                 }
-                assert_eq!(num - 2, self[[v1, v2]].conflicts);
                 assert!(num <= 3);
             }
         }
@@ -140,7 +139,7 @@ pub fn finish_solve(output: &mut Graph) {
     }
 }
 
-pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<i32> {
+pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<u32> {
     finish_solve(output);
     let mut writer = BufWriter::new(file);
 
