@@ -38,10 +38,19 @@ mod tests {
             let graph = load(File::open(&file_name).unwrap()).unwrap();
             // critical(&mut graph);
             let mut solver = Solver::new(graph);
+
+            if cfg!(feature = "perfect-upper") {
+                solver.upper = sol
+            }
+
             solver.search_components();
             println!("c: {}", solver.upper);
             println!("{}", time.elapsed().as_millis());
             assert_eq!(solver.upper, sol);
+
+            if cfg!(feature = "perfect-upper") {
+                continue;
+            }
 
             let out_file = format!("../exact/solution{:03}.s", instance);
             let out_file2 = format!("../exact/solution{:03}.gr", instance);
