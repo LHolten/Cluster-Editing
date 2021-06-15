@@ -25,7 +25,9 @@ impl Packing {
     }
 
     pub fn pack(&mut self, graph: &Graph) {
-        self.triples.clear();
+        if cfg!(feature = "incremental") {
+            self.triples.clear();
+        }
         self.lower = 0;
         for (i1, v1) in graph.active.all(0) {
             for (_, v2) in graph.active.all(i1) {
@@ -185,7 +187,9 @@ impl Packing {
         self.edge_cost[[v1, v3]] += cost;
         self.edge_cost[[v2, v3]] += cost;
         self.edge_cost[[v1, v2]] += cost;
-        self.triples.push(Triple::new([v1, v2, v3], cost));
+        if cfg!(feature = "incremental") {
+            self.triples.push(Triple::new([v1, v2, v3], cost));
+        }
         self.lower += cost;
     }
 

@@ -6,7 +6,15 @@ pub struct Triple {
 
 impl Triple {
     pub fn new(mut vertices: [usize; 3], cost: u32) -> Self {
-        vertices.sort_unstable();
+        if vertices[0] > vertices[1] {
+            vertices.swap(0, 1);
+        }
+        if vertices[0] > vertices[2] {
+            vertices.swap(0, 2);
+        }
+        if vertices[1] > vertices[2] {
+            vertices.swap(1, 2);
+        }
         Self { vertices, cost }
     }
 

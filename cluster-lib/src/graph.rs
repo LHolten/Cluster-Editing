@@ -7,7 +7,7 @@ use crate::matrix::Matrix;
 
 #[derive(Debug)]
 pub struct Graph {
-    pub vertices: Vec<Vertex>,
+    pub vertices: Vec<Option<usize>>,
     pub edges: Matrix<Edge>,
     pub active: Vec<usize>,
     pub len: usize,
@@ -44,9 +44,19 @@ impl Clone for Graph {
     }
 
     fn clone_from(&mut self, source: &Self) {
-        self.vertices.copy_from_slice(&source.vertices);
-        self.edges.clone_from(&source.edges);
-        self.active.clone_from(&source.active);
+        self.active.clear();
+        self.active.extend_from_slice(&source.active);
+        for v in 0..self.vertices.len() {
+            if source.vertices[v].is_some() || v >= source.len {
+                self.vertices[v] = source.vertices[v];
+            }
+        }
+        for (i1, v1) in self.active.all(0) {
+            self.vertices[v1] = None;
+            for (_, v2) in self.active.all(i1) {
+                self.edges[[v1, v2]] = source.edges[[v1, v2]];
+            }
+        }
         self.len = source.len;
     }
 }
@@ -81,7 +91,7 @@ impl Edge {
 impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
-            vertices: vec![Vertex::default(); size * 2],
+            vertices: vec![None; size * 2],
             edges: Matrix::new(Edge::new(-1), size * 2),
             active: (0..size).collect(),
             len: size,
@@ -103,7 +113,7 @@ impl Graph {
     }
 
     pub fn root(&self, index: usize) -> usize {
-        if let Some(new_index) = self.vertices[index].merged {
+        if let Some(new_index) = self.vertices[index] {
             self.root(new_index)
         } else {
             index

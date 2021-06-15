@@ -78,7 +78,7 @@ impl Graph {
                 for _ in self.conflict_edges(v1, v2, 0) {
                     num += 1;
                 }
-                assert!(num <= 3);
+                assert!(num <= 2);
             }
         }
     }
@@ -130,7 +130,7 @@ pub fn finish_solve(output: &mut Graph) {
     }
 
     for mut v1 in output.active.clone() {
-        if output.vertices[v1].merged.is_some() {
+        if output.vertices[v1].is_some() {
             continue;
         }
         for (_, v2) in output.positive(v1, 0).collect::<Vec<_>>() {
@@ -140,7 +140,6 @@ pub fn finish_solve(output: &mut Graph) {
 }
 
 pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<u32> {
-    finish_solve(output);
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
@@ -157,7 +156,6 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
 }
 
 pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
-    finish_solve(output);
     let mut writer = BufWriter::new(file);
     // writeln!(
     //     &mut writer,

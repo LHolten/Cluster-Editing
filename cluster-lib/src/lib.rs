@@ -19,13 +19,20 @@ mod tests {
 
     #[test]
     fn test() {
+        // let instances = vec![
+        //     1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 97, 113, 115, 137,
+        // ];
         let instances = vec![
-            1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 97, 113, 115, 137,
+            1, 3, 5, 7, 9, 11, 13, 15, 17, 21, 23, 25, 27, 29, 31, 33, 35, 39, 41, 47,
+        ];
+        let solution = vec![
+            3, 42, 46, 86, 90, 81, 181, 164, 236, 322, 281, 439, 432, 509, 285, 672, 385, 665, 184,
+            749,
         ];
         // let instances_hard = vec![17, 39];
         // let zero = vec![31, 41, 13];
         // let test = vec![35, 47, 49];
-        for instance in instances {
+        for (instance, sol) in instances.into_iter().zip(solution) {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
             let graph = load(File::open(&file_name).unwrap()).unwrap();
@@ -34,6 +41,8 @@ mod tests {
             solver.search_components();
             println!("c: {}", solver.upper);
             println!("{}", time.elapsed().as_millis());
+            assert_eq!(solver.upper, sol);
+
             let out_file = format!("../exact/solution{:03}.s", instance);
             let out_file2 = format!("../exact/solution{:03}.gr", instance);
             write(
