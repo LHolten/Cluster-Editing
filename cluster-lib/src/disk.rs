@@ -130,7 +130,7 @@ pub fn finish_solve(output: &mut Graph) {
     }
 
     for mut v1 in output.active.clone() {
-        if output.vertices[v1].is_some() {
+        if output.vertex_merged[v1].is_some() {
             continue;
         }
         for (_, v2) in output.positive(v1, 0).collect::<Vec<_>>() {

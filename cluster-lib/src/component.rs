@@ -29,22 +29,22 @@ impl Components {
         count
     }
 
-    pub fn other_component(&mut self, active: &mut Vec<usize>, len: usize) -> usize {
+    pub fn other_component(&mut self, active: &mut Vec<usize>, count: usize) -> usize {
         let active_len = active.len();
         let un_active_len = self.un_active.len();
-        if active_len > len {
-            self.un_active[un_active_len - len..].swap_with_slice(&mut active[..active_len - len]);
-            self.un_active.extend(active.drain(active_len - len..));
+        if count < active_len {
+            self.un_active[un_active_len - count..].swap_with_slice(&mut active[..count]);
+            self.un_active.extend(active.drain(count..));
         } else {
-            let split = un_active_len - len + active_len;
-            self.un_active[un_active_len - len..split].swap_with_slice(active);
+            let split = un_active_len - count + active_len;
+            self.un_active[un_active_len - count..split].swap_with_slice(active);
             active.extend(self.un_active.drain(split..))
         }
         active_len
     }
 
-    pub fn all_components(&mut self, active: &mut Vec<usize>, len: usize) {
-        active.extend(self.un_active.drain(self.un_active.len() - len..))
+    pub fn all_components(&mut self, active: &mut Vec<usize>, count: usize) {
+        active.extend(self.un_active.drain(self.un_active.len() - count..));
     }
 }
 

@@ -7,7 +7,7 @@ use crate::matrix::Matrix;
 
 #[derive(Debug)]
 pub struct Graph {
-    pub vertices: Vec<Option<usize>>,
+    pub vertex_merged: Vec<Option<usize>>,
     pub edges: Matrix<Edge>,
     pub active: Vec<usize>,
     pub len: usize,
@@ -36,7 +36,7 @@ impl PartialEq for Graph {
 impl Clone for Graph {
     fn clone(&self) -> Self {
         Self {
-            vertices: self.vertices.clone(),
+            vertex_merged: self.vertex_merged.clone(),
             edges: self.edges.clone(),
             active: self.active.clone(),
             len: self.len,
@@ -46,24 +46,19 @@ impl Clone for Graph {
     fn clone_from(&mut self, source: &Self) {
         self.active.clear();
         self.active.extend_from_slice(&source.active);
-        for v in 0..self.vertices.len() {
-            if source.vertices[v].is_some() || v >= source.len {
-                self.vertices[v] = source.vertices[v];
+        for v in 0..self.vertex_merged.len() {
+            if source.vertex_merged[v].is_some() || v >= source.len {
+                self.vertex_merged[v] = source.vertex_merged[v];
             }
         }
         for (i1, v1) in self.active.all(0) {
-            self.vertices[v1] = None;
+            self.vertex_merged[v1] = None;
             for (_, v2) in self.active.all(i1) {
                 self.edges[[v1, v2]] = source.edges[[v1, v2]];
             }
         }
         self.len = source.len;
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
-pub struct Vertex {
-    pub merged: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,7 +86,7 @@ impl Edge {
 impl Graph {
     pub fn new(size: usize) -> Self {
         Self {
-            vertices: vec![None; size * 2],
+            vertex_merged: vec![None; size * 2],
             edges: Matrix::new(Edge::new(-1), size * 2),
             active: (0..size).collect(),
             len: size,
@@ -113,7 +108,7 @@ impl Graph {
     }
 
     pub fn root(&self, index: usize) -> usize {
-        if let Some(new_index) = self.vertices[index] {
+        if let Some(new_index) = self.vertex_merged[index] {
             self.root(new_index)
         } else {
             index

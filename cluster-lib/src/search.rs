@@ -15,7 +15,7 @@ pub struct Solver {
 
 impl Solver {
     pub fn new(graph: Graph) -> Self {
-        let len = graph.vertices.len();
+        let len = graph.vertex_merged.len();
         let mut packing = Packing::new(len);
         packing.pack(&graph);
         Self {
@@ -77,7 +77,11 @@ impl Solver {
         }
         if self.packing.lower + (cost as u32) < self.upper {
             self.upper -= cost;
-            self.search_graph();
+            if cfg!(feature = "branch-comp") {
+                self.search_components()
+            } else {
+                self.search_graph();
+            }
             self.upper += cost;
         }
         self.packing.remove_vertex(&self.graph, vv);
@@ -96,7 +100,11 @@ impl Solver {
         }
         if self.packing.lower + cost < self.upper {
             self.upper -= cost;
-            self.search_graph();
+            if cfg!(feature = "branch-comp") {
+                self.search_components()
+            } else {
+                self.search_graph();
+            }
             self.upper += cost;
         }
         self.packing.remove_edge(&self.graph, v1, v2);

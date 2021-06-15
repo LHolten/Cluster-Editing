@@ -9,6 +9,7 @@ bench = false
 [features]
 incremental = []
 perfect-upper = []
+branch-comp = []
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }

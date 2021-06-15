@@ -23,8 +23,8 @@ impl Graph {
         }
 
         self.active.push(vv);
-        self.vertices[v1] = Some(vv);
-        self.vertices[v2] = Some(vv);
+        self.vertex_merged[v1] = Some(vv);
+        self.vertex_merged[v2] = Some(vv);
         (vv, cost)
     }
 
@@ -32,8 +32,8 @@ impl Graph {
         self.active.retain(|&v| v != vv);
         self.active.push(v1);
         self.active.push(v2);
-        self.vertices[v1] = None;
-        self.vertices[v2] = None;
+        self.vertex_merged[v1] = None;
+        self.vertex_merged[v2] = None;
         self.len -= 1;
     }
 
