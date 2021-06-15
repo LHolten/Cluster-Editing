@@ -33,10 +33,24 @@ impl Solver {
             return self.search_graph();
         }
 
+        let lower_before = self.packing.lower;
         let upper_before = self.upper;
+        let mut other_lower = 0;
+
+        if cfg!(not(feature = "incremental")) {
+            self.packing.pack(&self.graph);
+            other_lower = lower_before - self.packing.lower;
+            self.upper -= other_lower;
+        }
+
         self.search_graph();
-        let diff = self.upper - self.packing.lower;
+        let mut diff = self.upper - self.packing.lower;
         self.upper = upper_before;
+
+        if cfg!(not(feature = "incremental")) {
+            diff += self.packing.lower;
+            self.packing.lower = other_lower;
+        }
 
         let count = self
             .components
@@ -44,9 +58,9 @@ impl Solver {
 
         let old_len = self.graph.len;
         self.graph.len = self.best.len;
-        self.packing.lower += diff;
+        self.upper -= diff;
         self.search_components();
-        self.packing.lower -= diff;
+        self.upper += diff;
         self.graph.len = old_len;
 
         self.components
