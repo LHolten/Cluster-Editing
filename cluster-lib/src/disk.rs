@@ -110,24 +110,24 @@ impl Graph {
 }
 
 pub fn finish_solve(output: &mut Graph) {
-    let out = unsafe { &*(output as *const Graph) };
-    for (i1, v1) in out.active.all(0) {
-        for (i2, v2) in out.positive(v1, i1) {
-            let edge_weight = output[[v1, v2]].weight;
-            for (_, v3) in out.conflict_edges(v1, v2, i2) {
-                let (edge1, edge2) = (output[[v1, v3]], output[[v2, v3]]);
-                if edge_weight <= edge1.weight.abs() && edge_weight <= edge2.weight.abs() {
-                    output.cut(v1, v2);
-                } else if edge1.weight > 0 {
-                    if edge1.weight <= -edge2.weight {
-                        output.cut(v1, v3);
-                    }
-                } else if edge2.weight <= -edge1.weight {
-                    output.cut(v2, v3);
-                }
-            }
-        }
-    }
+    // let out = unsafe { &*(output as *const Graph) };
+    // for (i1, v1) in out.active.all(0) {
+    //     for (i2, v2) in out.positive(v1, i1) {
+    //         let edge_weight = output[[v1, v2]].weight;
+    //         for (_, v3) in out.conflict_edges(v1, v2, i2) {
+    //             let (edge1, edge2) = (output[[v1, v3]], output[[v2, v3]]);
+    //             if edge_weight <= edge1.weight.abs() && edge_weight <= edge2.weight.abs() {
+    //                 output.cut(v1, v2);
+    //             } else if edge1.weight > 0 {
+    //                 if edge1.weight <= -edge2.weight {
+    //                     output.cut(v1, v3);
+    //                 }
+    //             } else if edge2.weight <= -edge1.weight {
+    //                 output.cut(v2, v3);
+    //             }
+    //         }
+    //     }
+    // }
 
     for mut v1 in output.active.clone() {
         if output.vertex_merged[v1].is_some() {
@@ -140,7 +140,7 @@ pub fn finish_solve(output: &mut Graph) {
     }
 }
 
-pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<u32> {
+pub fn write_solution<F: Write>(input: &Graph, output: &Graph, file: F) -> io::Result<u32> {
     let mut writer = BufWriter::new(file);
 
     let mut count = 0;
@@ -156,7 +156,7 @@ pub fn write_solution<F: Write>(input: &Graph, output: &mut Graph, file: F) -> i
     Ok(count)
 }
 
-pub fn write<F: Write>(input: &Graph, output: &mut Graph, file: F) -> io::Result<()> {
+pub fn write<F: Write>(input: &Graph, output: &Graph, file: F) -> io::Result<()> {
     let mut writer = BufWriter::new(file);
     // writeln!(
     //     &mut writer,

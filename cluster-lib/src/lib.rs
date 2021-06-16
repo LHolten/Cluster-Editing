@@ -48,7 +48,7 @@ mod tests {
             println!("{}", time.elapsed().as_millis());
             assert_eq!(solver.upper, sol);
 
-            if cfg!(feature = "perfect-upper") {
+            if cfg!(any(feature = "perfect-upper", feature = "branch-comp")) {
                 continue;
             }
 
@@ -56,14 +56,14 @@ mod tests {
             let out_file2 = format!("../exact/solution{:03}.gr", instance);
             write(
                 &solver.graph,
-                &mut solver.best,
+                &solver.best,
                 File::create(&out_file2).unwrap(),
             )
             .unwrap();
 
             let count2 = write_solution(
                 &solver.graph,
-                &mut solver.best,
+                &solver.best,
                 File::create(&out_file).unwrap(),
             )
             .unwrap();

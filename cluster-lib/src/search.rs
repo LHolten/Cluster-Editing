@@ -28,40 +28,51 @@ impl Solver {
     }
 
     pub fn search_components(&mut self) {
-        let count = self.components.isolate_component(&mut self.graph);
-        if count == 0 {
+        let other_count = self.components.isolate_component(&mut self.graph);
+        if other_count == 0 {
             return self.search_graph();
         }
 
-        let lower_before = self.packing.lower;
-        let upper_before = self.upper;
-        let mut other_lower = 0;
+        let upper_both = self.upper;
+        let mut cost_other = 0;
 
         if cfg!(not(feature = "incremental")) {
+            let lower_both = self.packing.lower;
             self.packing.pack(&self.graph);
-            other_lower = lower_before - self.packing.lower;
-            self.upper -= other_lower;
+            cost_other = lower_both - self.packing.lower;
         }
 
+        self.upper -= cost_other;
         self.search_graph();
-        let mut diff = self.upper - self.packing.lower;
-        self.upper = upper_before;
+        self.upper += cost_other;
 
-        if cfg!(not(feature = "incremental")) {
-            diff += self.packing.lower;
-            self.packing.lower = other_lower;
+        if self.upper == upper_both {
+            self.components
+                .all_components(&mut self.graph.active, other_count);
+            return;
         }
+        assert!(upper_both > self.upper);
 
         let count = self
             .components
-            .other_component(&mut self.graph.active, count);
+            .other_component(&mut self.graph.active, other_count);
+
+        let mut cost = self.upper - self.packing.lower; // how much the component costs on top of the lower bound
+
+        if cfg!(not(feature = "incremental")) {
+            cost = self.upper - cost_other;
+            self.packing.pack(&self.graph); // i do not know why it has to be recalculated here
+                                            // self.packing.lower = cost_other;
+        }
+
+        self.upper = upper_both; // the upper bound stays the same because we have not yet solved all components
 
         let old_len = self.graph.len;
-        self.graph.len = self.best.len;
-        self.upper -= diff;
+        self.graph.len = self.best.len; // we need to add the solutions
+        self.upper -= cost; // remove the cost of the first component
         self.search_components();
-        self.upper += diff;
-        self.graph.len = old_len;
+        self.upper += cost;
+        self.graph.len = old_len; // from here we will overwrite solutions again
 
         self.components
             .all_components(&mut self.graph.active, count);
