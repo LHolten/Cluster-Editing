@@ -47,7 +47,7 @@ impl Clone for Graph {
         self.active.clear();
         self.active.extend_from_slice(&source.active);
         for v in 0..self.vertex_merged.len() {
-            if source.vertex_merged[v].is_some() || v >= source.len {
+            if source.vertex_merged[v].is_some() {
                 self.vertex_merged[v] = source.vertex_merged[v];
             }
         }

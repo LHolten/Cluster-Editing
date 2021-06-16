@@ -135,6 +135,7 @@ pub fn finish_solve(output: &mut Graph) {
         }
         for (_, v2) in output.positive(v1, 0).collect::<Vec<_>>() {
             v1 = output.merge(v1, v2).0;
+            output.vertex_merged[v1] = None
         }
     }
 }

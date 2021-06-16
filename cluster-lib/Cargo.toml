@@ -10,9 +10,10 @@ bench = false
 incremental = []
 perfect-upper = []
 branch-comp = []
+alt-cost = []
 
 [dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = { version="0.3", features=["html_reports"] }
 pretty_assertions = "0.7.2"
 
 [[bench]]

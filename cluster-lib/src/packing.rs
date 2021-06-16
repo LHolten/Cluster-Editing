@@ -160,15 +160,25 @@ impl Packing {
 
     #[inline(always)]
     pub fn add_triple(&mut self, graph: &Graph, v1: usize, v2: usize, v3: usize) {
-        let e12 = graph[[v1, v3]].weight > 0;
-        let e13 = graph[[v2, v3]].weight > 0;
-        let e23 = graph[[v1, v2]].weight > 0;
+        let e12 = -graph[[v1, v3]].weight < 0;
+        let e13 = -graph[[v2, v3]].weight < 0;
+        let e23 = -graph[[v1, v2]].weight < 0;
         if e12 as u32 + e13 as u32 + e23 as u32 != 2 {
             return;
         }
-        self.edge_conflicts[[v1, v3]] += 1;
-        self.edge_conflicts[[v2, v3]] += 1;
-        self.edge_conflicts[[v1, v2]] += 1;
+
+        if cfg!(feature = "alt-cost") {
+            self.edge_conflicts[[v1, v3]] +=
+                min(graph[[v2, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
+            self.edge_conflicts[[v2, v3]] +=
+                min(graph[[v1, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
+            self.edge_conflicts[[v1, v2]] +=
+                min(graph[[v2, v3]].weight.abs(), graph[[v1, v3]].weight.abs()) as u32;
+        } else {
+            self.edge_conflicts[[v1, v3]] += 1;
+            self.edge_conflicts[[v2, v3]] += 1;
+            self.edge_conflicts[[v1, v2]] += 1;
+        }
 
         if self.edge_cost[[v1, v2]] == graph[[v1, v2]].weight.abs() as u32
             || self.edge_cost[[v1, v3]] == graph[[v1, v3]].weight.abs() as u32
@@ -194,15 +204,25 @@ impl Packing {
     }
 
     pub fn remove_triple_conflicts(&mut self, graph: &Graph, v1: usize, v2: usize, v3: usize) {
-        let e12 = graph[[v1, v3]].weight > 0;
-        let e13 = graph[[v2, v3]].weight > 0;
-        let e23 = graph[[v1, v2]].weight > 0;
+        let e12 = -graph[[v1, v3]].weight < 0;
+        let e13 = -graph[[v2, v3]].weight < 0;
+        let e23 = -graph[[v1, v2]].weight < 0;
         if e12 as u32 + e13 as u32 + e23 as u32 != 2 {
             return;
         }
-        self.edge_conflicts[[v1, v3]] -= 1;
-        self.edge_conflicts[[v2, v3]] -= 1;
-        self.edge_conflicts[[v1, v2]] -= 1;
+
+        if cfg!(feature = "alt-cost") {
+            self.edge_conflicts[[v1, v3]] -=
+                min(graph[[v2, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
+            self.edge_conflicts[[v2, v3]] -=
+                min(graph[[v1, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
+            self.edge_conflicts[[v1, v2]] -=
+                min(graph[[v2, v3]].weight.abs(), graph[[v1, v3]].weight.abs()) as u32;
+        } else {
+            self.edge_conflicts[[v1, v3]] -= 1;
+            self.edge_conflicts[[v2, v3]] -= 1;
+            self.edge_conflicts[[v1, v2]] -= 1;
+        }
     }
 
     pub fn remove_triple_cost(&mut self, triple: Triple) {
