@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
         "kernelize"
-    ]
+    ],
+    "python.formatting.provider": "black",
 }

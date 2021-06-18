@@ -10,7 +10,12 @@ mod triple;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, process::Command, time::Instant};
+    use std::{
+        fs::File,
+        io::{self, Write},
+        process::Command,
+        time::Instant,
+    };
 
     use crate::{
         disk::{load, write, write_solution},
@@ -22,16 +27,10 @@ mod tests {
         // let instances = vec![
         //     1, 3, 5, 7, 9, 11, 13, 15, 21, 23, 25, 31, 35, 41, 47, 97, 113, 115, 137,
         // ];
-        let instances = vec![
-            1, 3, 5, 7, 9, 11, 13, 15, 17, 21, 23, 25, 27, 29, 31, 33, 35, 39, 41, 47,
-        ];
-        let solution = vec![
-            3, 42, 46, 86, 90, 81, 181, 164, 236, 322, 281, 439, 432, 509, 285, 672, 385, 665, 184,
-            749,
-        ];
-        // let instances_hard = vec![17, 39];
-        // let zero = vec![31, 41, 13];
-        // let test = vec![35, 47, 49];
+        // let instances = vec![17, 27, 29, 33, 39];
+        // let solution = vec![236, 432, 509, 672, 665];
+        let instances = vec![19];
+        let solution = vec![298];
         for (instance, sol) in instances.into_iter().zip(solution) {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
@@ -44,8 +43,8 @@ mod tests {
             }
 
             solver.search_components();
-            println!("c: {}", solver.upper);
-            println!("{}", time.elapsed().as_millis());
+            print!("({}, {})", instance, time.elapsed().as_millis());
+            io::stdout().flush().unwrap();
             assert_eq!(solver.upper, sol);
 
             if cfg!(any(feature = "perfect-upper", feature = "branch-comp")) {
