@@ -25,9 +25,7 @@ impl Packing {
     }
 
     pub fn pack(&mut self, graph: &Graph) {
-        if cfg!(feature = "incremental") {
-            self.triples.clear();
-        }
+        self.triples.clear();
         self.lower = 0;
         for (i1, v1) in graph.active.all(0) {
             for (_, v2) in graph.active.all(i1) {
@@ -64,10 +62,12 @@ impl Packing {
         if cfg!(not(feature = "incremental")) {
             return;
         }
-        for i in (0..self.triples.len()).rev() {
-            if self.triples[i].vertex(v1) {
-                let triple = self.triples.swap_remove(i);
-                self.remove_triple_cost(triple);
+        if cfg!(not(feature = "no-lower")) {
+            for i in (0..self.triples.len()).rev() {
+                if self.triples[i].vertex(v1) {
+                    let triple = self.triples.swap_remove(i);
+                    self.remove_triple_cost(triple);
+                }
             }
         }
 
@@ -104,10 +104,12 @@ impl Packing {
         if cfg!(not(feature = "incremental")) {
             return;
         }
-        for i in (0..self.triples.len()).rev() {
-            if self.triples[i].vertex(v1) || self.triples[i].vertex(v2) {
-                let triple = self.triples.swap_remove(i);
-                self.remove_triple_cost(triple);
+        if cfg!(not(feature = "no-lower")) {
+            for i in (0..self.triples.len()).rev() {
+                if self.triples[i].vertex(v1) || self.triples[i].vertex(v2) {
+                    let triple = self.triples.swap_remove(i);
+                    self.remove_triple_cost(triple);
+                }
             }
         }
 
@@ -140,10 +142,12 @@ impl Packing {
         if cfg!(not(feature = "incremental")) {
             return;
         }
-        for i in (0..self.triples.len()).rev() {
-            if self.triples[i].edge([v1, v2]) {
-                let triple = self.triples.swap_remove(i);
-                self.remove_triple_cost(triple);
+        if cfg!(not(feature = "no-lower")) {
+            for i in (0..self.triples.len()).rev() {
+                if self.triples[i].edge([v1, v2]) {
+                    let triple = self.triples.swap_remove(i);
+                    self.remove_triple_cost(triple);
+                }
             }
         }
 
@@ -178,6 +182,10 @@ impl Packing {
             self.edge_conflicts[[v1, v3]] += 1;
             self.edge_conflicts[[v2, v3]] += 1;
             self.edge_conflicts[[v1, v2]] += 1;
+        }
+
+        if cfg!(feature = "no-lower") {
+            return;
         }
 
         if self.edge_cost[[v1, v2]] == graph[[v1, v2]].weight.abs() as u32

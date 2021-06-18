@@ -11,6 +11,7 @@ incremental = []
 perfect-upper = []
 branch-comp = []
 alt-cost = []
+no-lower = []
 
 [dev-dependencies]
 criterion = { version="0.3", features=["html_reports"] }
