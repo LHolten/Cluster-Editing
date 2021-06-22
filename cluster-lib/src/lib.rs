@@ -17,6 +17,8 @@ mod tests {
         time::Instant,
     };
 
+    use rand::{prelude::SliceRandom, thread_rng};
+
     use crate::{
         disk::{load, write, write_solution},
         search::Solver,
@@ -24,22 +26,25 @@ mod tests {
 
     #[test]
     fn test() {
-        let instances = vec![
-            1, 3, 5, 7, 9, 11, 13, 15, 17, 21, 23, 25, 27, 29, 31, 33, 35, 39, 41, 47,
-        ];
-        let solution = vec![
-            3, 42, 46, 86, 90, 81, 181, 164, 236, 322, 281, 439, 432, 509, 285, 672, 385, 665, 184,
-            749,
-        ];
+        // let instances = vec![
+        //     1, 3, 5, 7, 9, 11, 13, 15, 17, 21, 23, 25, 27, 29, 31, 33, 35, 39, 41, 47,
+        // ];
+        // let solution = vec![
+        //     3, 42, 46, 86, 90, 81, 181, 164, 236, 322, 281, 439, 432, 509, 285, 672, 385, 665, 184,
+        //     749,
+        // ];
 
-        // let instances = vec![17, 27, 29, 33, 39];
-        // let solution = vec![236, 432, 509, 672, 665];
-        // let instances = vec![19];
-        // let solution = vec![298];
+        let instances = vec![17, 27, 29, 33, 39];
+        let solution = vec![236, 432, 509, 672, 665];
+        let instances = vec![19];
+        let solution = vec![298];
+        let instances = vec![33];
+        let solution = vec![672];
         for (instance, sol) in instances.into_iter().zip(solution) {
             let time = Instant::now();
             let file_name = format!("../exact/exact{:03}.gr", instance);
-            let graph = load(File::open(&file_name).unwrap()).unwrap();
+            let mut graph = load(File::open(&file_name).unwrap()).unwrap();
+            graph.active.shuffle(&mut thread_rng());
             // critical(&mut graph);
             let mut solver = Solver::new(graph);
 

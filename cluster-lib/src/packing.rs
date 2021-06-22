@@ -178,6 +178,17 @@ impl Packing {
                 min(graph[[v1, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
             self.edge_conflicts[[v1, v2]] +=
                 min(graph[[v2, v3]].weight.abs(), graph[[v1, v3]].weight.abs()) as u32;
+        } else if cfg!(feature = "alt-cost-2") {
+            let deletion = if -graph[[v1, v3]].weight >= 0 {
+                min(graph[[v2, v3]].weight, graph[[v1, v2]].weight)
+            } else if -graph[[v2, v3]].weight >= 0 {
+                min(graph[[v1, v3]].weight, graph[[v1, v2]].weight)
+            } else {
+                min(graph[[v1, v3]].weight, graph[[v2, v3]].weight)
+            };
+            self.edge_conflicts[[v1, v3]] += deletion as u32;
+            self.edge_conflicts[[v2, v3]] += deletion as u32;
+            self.edge_conflicts[[v1, v2]] += deletion as u32;
         } else {
             self.edge_conflicts[[v1, v3]] += 1;
             self.edge_conflicts[[v2, v3]] += 1;
@@ -226,6 +237,17 @@ impl Packing {
                 min(graph[[v1, v3]].weight.abs(), graph[[v1, v2]].weight.abs()) as u32;
             self.edge_conflicts[[v1, v2]] -=
                 min(graph[[v2, v3]].weight.abs(), graph[[v1, v3]].weight.abs()) as u32;
+        } else if cfg!(feature = "alt-cost-2") {
+            let deletion = if -graph[[v1, v3]].weight >= 0 {
+                min(graph[[v2, v3]].weight, graph[[v1, v2]].weight)
+            } else if -graph[[v2, v3]].weight >= 0 {
+                min(graph[[v1, v3]].weight, graph[[v1, v2]].weight)
+            } else {
+                min(graph[[v1, v3]].weight, graph[[v2, v3]].weight)
+            };
+            self.edge_conflicts[[v1, v3]] -= deletion as u32;
+            self.edge_conflicts[[v2, v3]] -= deletion as u32;
+            self.edge_conflicts[[v1, v2]] -= deletion as u32;
         } else {
             self.edge_conflicts[[v1, v3]] -= 1;
             self.edge_conflicts[[v2, v3]] -= 1;
