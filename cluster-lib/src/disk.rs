@@ -22,6 +22,9 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
     };
 
     let mut graph: Graph = Graph::new(v);
+    for i in 0..v * 2 {
+        graph[[i, i]].weight = i32::MAX;
+    }
 
     for line in reader.lines() {
         let line = line?;
@@ -43,24 +46,6 @@ pub fn load<F: Read>(file: F) -> io::Result<Graph> {
 }
 
 impl Graph {
-    // fn add_indirect_edges(&mut self) {
-    //     for v1 in self.active.clone() {
-    //         'l: for v2 in self.active.clone() {
-    //             if self[[v1, v2]].weight > 0 {
-    //                 continue;
-    //             }
-    //             for (j1, n1) in self.two_edges(v1, v2, 0) {
-    //                 for (_, n2) in self.two_edges(v1, v2, j1) {
-    //                     if self[[n1, n2]].weight > 0 {
-    //                         continue 'l;
-    //                     }
-    //                 }
-    //             }
-    //             self[[v1, v2]] = Edge::none()
-    //         }
-    //     }
-    // }
-
     pub fn edge_count(&self) -> u32 {
         let mut total = 0;
         for (i1, v1) in self.active.all(0) {
@@ -78,32 +63,7 @@ impl Graph {
                 for _ in self.conflict_edges(v1, v2, 0) {
                     num += 1;
                 }
-                assert!(num <= 2);
-            }
-        }
-    }
-    // pub fn check_easy(&self) {
-    //     for (i1, v1) in self.all(0) {
-    //         for (_, v2) in self.positive(v1, i1) {
-    //             let e12 = self[v1][v2].weight > 0;
-    //             let mut num = if e12 { -2 } else { 0 };
-    //             for (_, v3) in self.all(0) {
-    //                 let e13 = self[v1][v3].weight > 0;
-    //                 let e23 = self[v2][v3].weight > 0;
-    //                 num += ((e12 | e13 | e23) & !(e12 ^ e13 ^ e23)) as i32;
-    //             }
-    //             assert!(num <= 1);
-    //         }
-    //     }
-    // }
-
-    pub fn check_uneven(&self) {
-        for (i1, v1) in self.active.all(0) {
-            for (_, v2) in self.active.all(i1) {
-                if self[[v1, v2]].weight % 2 == 0 {
-                    assert!(self[[v1, v2]].weight <= 0);
-                    assert!(self.two_edges(v1, v2, 0).count() == 0);
-                }
+                assert!(num == 0);
             }
         }
     }
