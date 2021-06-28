@@ -7,10 +7,21 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
-            "program": "${workspaceFolder}/<your program>",
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
+            "name": "Cargo test",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--features",
+                    "incremental",
+                    "--",
+                    "--exact",
+                    "tests::test",
+                    "--nocapture"
+                ]
+            },
+            "args": []
+        },
     ]
 }

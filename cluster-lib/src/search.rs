@@ -22,7 +22,7 @@ impl Solver {
             graph: graph.clone(),
             packing,
             components: Components::new(len),
-            upper: u32::MAX,
+            upper: graph.edge_count(),
             best: graph,
         }
     }
